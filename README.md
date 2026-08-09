@@ -1,14 +1,18 @@
 # little_helpers
 
 Self-contained Nuke artist tools for building and maintaining layer-branch
-comps (see `docs/NUKE_COMP_LAYER_ASSEMBLY.md` in the parent repo for the
+comps (see `docs/NUKE_COMP_LAYER_ASSEMBLY.md` in this repo for the
 comp pattern these tools assume). No MCP, no network, no server -- this
 package never opens a socket and never talks to anything outside the Nuke
 session it's running in.
 
+Extracted from the `vfx-mcp` pipeline-infra repo (`github.com/sandalya/vfx-mcp`)
+so it can be handed to other compositors on its own, with no MCP/socket/server
+code along for the ride.
+
 Installing this yourself on your own machine? Keep reading below.
 Rolling it out pipeline-wide for other compositors? See
-`docs/NUKE_PIPELINE_TD_INTEGRATION.md` in the parent repo instead --
+`docs/NUKE_PIPELINE_TD_INTEGRATION.md` in this repo instead --
 it covers shared-`NUKE_PATH` placement, `menu.py` wiring, hotkey
 collision checks, and which of the three tools are coupled to the
 layer-branch comp convention.
@@ -23,8 +27,8 @@ layer-branch comp convention.
 
 ## Install
 
-1. Copy the whole `little_helpers/` folder into `~/.nuke/` (i.e. it should
-   end up on `NUKE_PATH` as `<...>/.nuke/little_helpers/`).
+1. Clone or copy this repo's contents into `~/.nuke/little_helpers/` (i.e. it
+   should end up on `NUKE_PATH` as `<...>/.nuke/little_helpers/`).
 2. Add two lines to `~/.nuke/menu.py`:
 
    ```python
