@@ -246,24 +246,28 @@ def bump_selected_reads(direction):
     artist's selection pointing at a random history Read instead of what
     they actually picked -- and _VersionHUD's status refresh reads
     _working_read_nodes() right after this returns, so a wrong selection
-    there would report on the wrong nodes too."""
+    there would report on the wrong nodes too.
+
+    The not-live skip (see _is_live_read) only applies to the nodes-in-view
+    fallback (nothing explicitly selected) -- Sashok's ask: an explicit
+    selection is itself the artist saying "act on this," even if it's a
+    disconnected history Read, so it should always bump. The fallback
+    still needs the guard since "everything visible in the viewport"
+    routinely includes history Reads sitting right next to their live
+    sibling that the artist never meant to touch."""
     original_selection = nuke.selectedNodes()
+    explicit_selection = bool(original_selection)
     reads = _working_read_nodes()
     updated = 0
     skipped = 0
     for read in reads:
-        if not _is_live_read(read):
-            # Not live -- nothing downstream, so this is itself a history/
-            # reference Read (docs/NUKE_COMP_LAYER_ASSEMBLY.md's "old
-            # versions kept, not deleted" pattern). History Reads sit right
-            # next to their live sibling, so a box-select/shift-click on
-            # the branch easily grabs them too -- bumping one directly
-            # would make it its own "live" head, and _sync_history_reads
-            # would then build IT a history row too, cascading extra
-            # nodes (confirmed live: a co-selected old history Read spun
-            # off its own history chain). Skip outright rather than only
-            # skipping the sync, so a stray history Read's own version
-            # never changes underneath the artist either.
+        live = _is_live_read(read)
+        if not live and not explicit_selection:
+            # Not live and not explicitly picked -- nothing downstream, so
+            # this is itself a history/reference Read (docs/
+            # NUKE_COMP_LAYER_ASSEMBLY.md's "old versions kept, not
+            # deleted" pattern), and it only ended up in the working set
+            # via the nodes-in-view fallback. Skip outright.
             skipped += 1
             print(f"bump_selected_reads({direction!r}): {read.name()} skipped -- "
                   f"not live (no downstream connections, looks like a history Read)")
@@ -272,7 +276,13 @@ def bump_selected_reads(direction):
         if status == "updated":
             updated += 1
             layer_dir, pass_name, target_num = parsed
-            if _HISTORY_COUNTS.get(pass_name, 0) > 0 and _HISTORY_ENABLED:
+            # History-row sync stays gated on liveness regardless of how
+            # the node entered the working set -- syncing a disconnected
+            # Read would make IT a "live" head and build it its own
+            # history row too, cascading extra nodes (confirmed live: a
+            # co-selected old history Read spun off its own history
+            # chain, back when this gate didn't exist at all).
+            if live and _HISTORY_COUNTS.get(pass_name, 0) > 0 and _HISTORY_ENABLED:
                 _sync_history_reads(read, layer_dir, pass_name, target_num)
         else:
             skipped += 1
