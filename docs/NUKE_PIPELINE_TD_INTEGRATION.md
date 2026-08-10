@@ -21,10 +21,16 @@ pipeline — там немає нічого, що припускає, що ко�
 
 ## 1. Які файли й куди класти
 
-Скопіювати всю папку `little_helpers/` (разом з підпакетом `split_layers/`)
-кудись, що вже є на `NUKE_PATH` для кожного артиста — у ваше центральне
-місце для тулз, а не в `~/.nuke/` на кожній машині окремо. Назву папки не
-чіпати — вона ж і назва Python-пакета.
+Скопіювати всю папку `little_helpers/` (разом з підпакетами `veriter/` і
+`split_layers/`) кудись, що вже є на `NUKE_PATH` для кожного артиста — у
+ваше центральне місце для тулз, а не в `~/.nuke/` на кожній машині окремо.
+Назву папки не чіпати — вона ж і назва Python-пакета.
+
+`little_helpers/` влаштований як набір тулз: спільна інфраструктура
+(`hud.py`, `nuke_utils.py`, `layer_branch.py`) лежить прямо в корені
+пакета, а кожна самодостатня тулза — у своїй підпапці (`veriter/` для
+Change Layer Version, `split_layers/` для Split Layers). Наступні нові
+тулзи очікувано підуть за тим самим патерном — ще одна підпапка поруч.
 
 ```
 <корінь спільного NUKE_PATH>/
@@ -34,10 +40,12 @@ pipeline — там немає нічого, що припускає, що ко�
     ├── hud.py
     ├── layer_branch.py
     ├── layer_picker_ui.py
-    ├── versions.py
-    ├── version_ui.py
     ├── README.md            (референс для художників, не код — можна лишити на місці)
-    └── split_layers/
+    ├── veriter/             (Change Layer Version, Shift+E)
+    │   ├── __init__.py
+    │   ├── versions.py
+    │   └── version_ui.py
+    └── split_layers/        (Split Layers, F10)
         ├── __init__.py
         ├── models.py
         ├── nuke_actions.py

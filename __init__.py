@@ -13,13 +13,23 @@ wants to use it imports it -- never the other way around.
 import nuke
 
 from .layer_picker_ui import show_layer_picker
-from .version_ui import show_version_hud
 
 __version__ = "0.1.0"
 
 LAYER_PICKER_MENU_PATH = "Little Helpers/Create Layer Branch"
 VERSION_HUD_MENU_PATH = "Little Helpers/Change Layer Version"
 SPLIT_LAYERS_MENU_PATH = "Little Helpers/Split Layers"
+
+
+# ---- Version manager hookup (Function 2, Shift+E) ------------------------
+# Calls the standalone veriter tool (little_helpers/veriter/) unmodified --
+# same lazy-import pattern as split_layers below, so both self-contained
+# tool subpackages stay consistent.
+
+def show_version_hud():
+    """Shift+E -- standalone entry point, runs on selected/visible Reads."""
+    from .veriter.version_ui import show_version_hud as _show_version_hud
+    _show_version_hud()
 
 
 # ---- Split layers hookup (Function 1 checkbox + standalone F10) ---------
@@ -79,8 +89,9 @@ def register_menu():
 
 
 _RELOAD_ORDER = (
-    "nuke_utils", "hud", "layer_branch", "versions",
-    "layer_picker_ui", "version_ui",
+    "nuke_utils", "hud", "layer_branch",
+    "veriter.versions", "veriter.version_ui",
+    "layer_picker_ui",
     "split_layers.models", "split_layers.uii",
     "split_layers.nuke_actions", "split_layers.split_layers",
 )

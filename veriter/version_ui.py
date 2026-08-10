@@ -1,5 +1,5 @@
 """
-little_helpers.version_ui
+little_helpers.veriter.version_ui
 
 Function 2 HUD (Shift+E): Latest/+/- buttons plus a History checkbox and a
 status panel, over whatever _versions._working_read_nodes() resolves to.
@@ -10,7 +10,7 @@ try:
 except ImportError:
     from PySide2 import QtWidgets, QtCore, QtGui
 
-from .layer_branch import _available_versions
+from ..layer_branch import _available_versions
 from .versions import (
     _HISTORY_ENABLED,
     _is_live_read,

@@ -1,5 +1,5 @@
 """
-little_helpers.versions
+little_helpers.veriter.versions
 
 Function 2 logic (Shift+E): jump-to-latest / step version up / step version
 down on whatever Read node(s) are selected, each resolved independently
@@ -13,8 +13,8 @@ import re
 
 import nuke
 
-from .layer_branch import _VERSION_DIR_RE, _apply_read_sequence, _available_versions, _collapse_sequence
-from .nuke_utils import nodes_in_view
+from ..layer_branch import _VERSION_DIR_RE, _apply_read_sequence, _available_versions, _collapse_sequence
+from ..nuke_utils import nodes_in_view
 
 _READ_PATH_RE = re.compile(
     r"^(?P<layer_dir>.+)/(?P<version>v\d+)/(?P<pass_name>\w+)_product\.",
