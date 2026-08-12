@@ -207,11 +207,20 @@ def _bump_read_version(read, direction):
         return "skipped", "no versions found on disk", None
 
     current_num = int(_VERSION_DIR_RE.match(current_version).group(1))
+    old_first, old_last = read["first"].value(), read["last"].value()
 
     if direction == "latest":
         target_num, target_vname = versions[-1]
         if target_num == current_num:
-            return "skipped", "already at latest", None
+            # Same version folder can still gain frames after this Read was
+            # set (e.g. one test frame rendered first, the full shot
+            # rendered later into that same vNNN) -- re-check the on-disk
+            # range before skipping just because the version number didn't
+            # move (confirmed live on sh320/bg: v008 stuck at 1001-1001
+            # after the shot finished rendering to 1001-1029 in v008).
+            seq = _collapse_sequence(f"{layer_dir}/{target_vname}", pass_name)
+            if not seq or (seq["first"] == old_first and seq["last"] == old_last):
+                return "skipped", "already at latest", None
     elif direction == "up":
         higher = [(n, v) for n, v in versions if n > current_num]
         if not higher:
@@ -230,7 +239,11 @@ def _bump_read_version(read, direction):
     if pass_name == "beauty":
         read["postage_stamp"].setValue(True)  # this is the live main Read,
         # not a history one -- see _apply_read_sequence's postage_stamp note
-    return "updated", f"{current_version} -> {target_vname}", (layer_dir, pass_name, target_num)
+    if target_num == current_num:
+        detail = f"{current_version} range refreshed ({int(old_first)}-{int(old_last)} -> {seq['first']}-{seq['last']})"
+    else:
+        detail = f"{current_version} -> {target_vname}"
+    return "updated", detail, (layer_dir, pass_name, target_num)
 
 
 def bump_selected_reads(direction):
