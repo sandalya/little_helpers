@@ -33,11 +33,13 @@ def show_version_hud():
 
 
 # ---- Split layers hookup (Function 1 checkbox + standalone F10) ---------
-# Calls the standalone split_layers tool (little_helpers/split_layers/)
-# unmodified -- per Sashok's explicit ask, this is thin glue only (optional
-# node selection + the call), no split_layers logic ported in here.
-# Isolating *which* layers to split stays manual, inside that tool's own
-# panel.
+# little_helpers/split_layers/ reuses the pipeline's own split_layers
+# package (pl_scripts.split_layers, same imported instance) for the UI and
+# layer-collection side; only node-graph spacing (split_layers/
+# nuke_actions.py) stays a local copy, a deliberate divergence rather than
+# a duplicate -- see that module's own comments. This function stays thin
+# glue only (optional node selection + the call), no split_layers logic
+# ported in here.
 
 def run_split_layers(node):
     """Function 1's "Split layers" checkbox -- selects `node` (the branch's
@@ -92,7 +94,6 @@ _RELOAD_ORDER = (
     "nuke_utils", "hud", "layer_branch",
     "veriter.versions", "veriter.version_ui",
     "layer_picker_ui",
-    "split_layers.models", "split_layers.uii",
     "split_layers.nuke_actions", "split_layers.split_layers",
 )
 

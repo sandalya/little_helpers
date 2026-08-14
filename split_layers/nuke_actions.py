@@ -1,7 +1,6 @@
 import nuke
 
 
-
 def split_explicit(node, layers, alpha, unpremult_all, merge_all, postage_stamp, mirror):
 
     if mirror:
@@ -37,11 +36,17 @@ def split_explicit(node, layers, alpha, unpremult_all, merge_all, postage_stamp,
     fork_node = current_node
     prev_node = current_node
 
-    # Shuffle
+    # Shuffle -- the first branch is the one that carries alpha forward for
+    # the whole chain (per Sashok's ask): in2 is the chosen alpha channel's
+    # layer, and the output alpha row pulls from it (alpha2). Every other
+    # branch's Shuffle explicitly zeroes alpha instead (see below), so
+    # alpha only ever comes from here, never accumulated across branches.
     current_node = nuke.nodes.Shuffle(xpos=prev_node.xpos() - x_shift, ypos=prev_node.ypos() + 75)
     current_node.connectInput(0, prev_node)
     #print(layers)
     current_node.knob('in').setValue(layers[0])
+    current_node.knob('in2').setValue(alpha.split('.')[0])
+    current_node.knob('alpha').setValue('alpha2')
     current_node.knob('label').setValue('[value in]')
     current_node.knob('postage_stamp').setValue(postage_stamp)
     prev_node = current_node
@@ -60,10 +65,13 @@ def split_explicit(node, layers, alpha, unpremult_all, merge_all, postage_stamp,
         fork_node = current_node
         prev_node = current_node
 
-        # Shuffle
+        # Shuffle -- not the first branch, so alpha is removed here (see
+        # comment on the first Shuffle above): black instead of whatever
+        # in1's own alpha happens to hold.
         current_node = nuke.nodes.Shuffle(xpos=prev_node.xpos() - x_shift, ypos=prev_node.ypos() + 75)
         current_node.connectInput(0, prev_node)
         current_node.knob('in').setValue(i)
+        current_node.knob('alpha').setValue('black')
         current_node.knob('label').setValue('[value in]')
         current_node.knob('postage_stamp').setValue(postage_stamp)
         prev_node = current_node
@@ -83,6 +91,12 @@ def split_explicit(node, layers, alpha, unpremult_all, merge_all, postage_stamp,
                 merge_y_shift = 525 if n == 0 else 75
                 current_node = nuke.nodes.Merge2(xpos=prev_node.xpos(), ypos=prev_node.ypos() + merge_y_shift)
                 current_node.knob('operation').setValue('plus')
+                # A channels: rgba layer with just the alpha checkbox off
+                # (per Sashok's ask -- confirmed exact serialization via a
+                # live Nuke copy/paste: "-rgba.alpha" marks it excluded
+                # from the rgba group, not the same as the bare "rgb"
+                # preset, which showed up as a different layer entirely).
+                current_node.knob('Achannels').setValue('rgba.red rgba.green rgba.blue -rgba.alpha')
                 current_node.knob('output').setValue('rgb')
                 d = nuke.nodes.Dot(xpos=last_nodes[n + 1].xpos() + x_shift, ypos=current_node.ypos() + 4)
                 d.setInput(0, last_nodes[n + 1])
