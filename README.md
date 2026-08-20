@@ -27,21 +27,35 @@ layer-branch comp convention.
 
 ## Install
 
-1. Clone or copy this repo's contents into `~/.nuke/little_helpers/` (i.e. it
-   should end up on `NUKE_PATH` as `<...>/.nuke/little_helpers/`).
-2. Add two lines to `~/.nuke/menu.py`:
+This repo's root is laid out to drop straight onto `NUKE_PATH` as-is --
+the checkout folder's name doesn't matter, only its contents do:
 
-   ```python
-   import little_helpers
-   little_helpers.register_menu()
-   ```
+```
+<this repo>/
+├── menu.py            <-- registers the tools; Nuke loads this automatically
+└── little_helpers/     <-- the actual package
+```
 
-3. Restart Nuke. The three tools appear under the `Little Helpers` menu in
+1. Clone or copy this repo somewhere on `NUKE_PATH` (any folder name works,
+   e.g. `~/.nuke/little_helpers-repo/` -- Nuke finds `menu.py` and the
+   `little_helpers` package inside it regardless of what the checkout itself
+   is called).
+2. Restart Nuke. The three tools appear under the `Little Helpers` menu in
    the Node Graph, with the hotkeys above.
 
 That's the entire install. Nothing else needs to run, nothing else needs
 to be configured, and nothing in this package binds a port or reaches
 outside the Nuke process.
+
+If `menu.py` can't sit directly on `NUKE_PATH` (e.g. a shared pipeline
+`menu.py` already exists), add its two lines to that file instead:
+
+```python
+import little_helpers
+little_helpers.register_menu()
+```
+-- as long as this repo's root (the parent of the `little_helpers/`
+package folder) is on `NUKE_PATH` so the import resolves.
 
 ## Notes
 
