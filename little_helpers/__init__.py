@@ -20,6 +20,13 @@ LAYER_PICKER_MENU_PATH = "Little Helpers/Create Layer Branch"
 VERSION_HUD_MENU_PATH = "Little Helpers/Change Layer Version"
 SPLIT_LAYERS_MENU_PATH = "Little Helpers/Split Layers"
 
+# Overrides Nuke's own built-in Paste command in place (nuke.menu("Nuke"),
+# not nuke.menu("Nodes") like the three paths above -- confirmed live via
+# a recursive nuke.menu() scan, same "wrong top-level menu" gotcha as the
+# Shift+D collision elsewhere in this project's history) so Ctrl+V itself
+# triggers the repath-on-paste check. See repath.py.
+PASTE_OVERRIDE_MENU_PATH = "Edit/Paste"
+
 
 # ---- Version manager hookup (Function 2, Shift+E) ------------------------
 # Calls the standalone veriter tool (little_helpers/veriter/) unmodified --
@@ -57,6 +64,17 @@ def show_split_layers():
     split_layers.main()
 
 
+# ---- Repath-on-paste hookup (Ctrl+V override) ----------------------------
+# See repath.py for the actual detection/repath logic. This stays thin glue
+# only, same lazy-import pattern as show_version_hud/show_split_layers above.
+
+def paste_and_maybe_repath():
+    """Ctrl+V override -- pastes normally, then checks the pasted selection
+    for cross-shot Reads / stray history Reads. See repath.py."""
+    from .repath import paste_and_maybe_repath as _paste_and_maybe_repath
+    _paste_and_maybe_repath()
+
+
 def register_menu():
     """Idempotent -- safe to call repeatedly without piling up duplicate
     menu entries (removes each old item first, if present)."""
@@ -89,12 +107,23 @@ def register_menu():
         "F10",
     )
 
+    nuke_menu = nuke.menu("Nuke")
+    if nuke_menu.findItem(PASTE_OVERRIDE_MENU_PATH):
+        nuke_menu.removeItem(PASTE_OVERRIDE_MENU_PATH)
+    nuke_menu.addCommand(
+        PASTE_OVERRIDE_MENU_PATH,
+        "import little_helpers; little_helpers.reload_all(); "
+        "little_helpers.paste_and_maybe_repath()",
+        "Ctrl+V",
+    )
+
 
 _RELOAD_ORDER = (
     "nuke_utils", "hud", "layer_branch",
     "veriter.versions", "veriter.version_ui",
     "layer_picker_ui",
     "split_layers.nuke_actions", "split_layers.split_layers",
+    "repath",
 )
 
 
