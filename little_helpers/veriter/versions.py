@@ -9,6 +9,7 @@ layer_branch.build_layer_branch. No shared "current branch" detection here
 this only ever touches nodes the artist has actually selected.
 """
 
+import os
 import re
 
 import nuke
@@ -18,7 +19,9 @@ from ..layer_branch import (
     _apply_read_sequence,
     _available_versions,
     _collapse_sequence,
+    _find_matching_layer_dir,
     _read_node_name,
+    _resolve_pass,
 )
 from ..nuke_utils import nodes_in_view
 
@@ -269,6 +272,75 @@ def _bump_read_version(read, direction):
     return "updated", detail, (layer_dir, pass_name, target_num)
 
 
+def _cross_shot_layer(read):
+    """If read's file path parses to the layer-branch convention and its
+    layer_dir resolves outside the current shot's $FTRACK_RENDER_PATH,
+    return (layer_dir, pass_name, old_layer_name) -- else None. Same
+    mismatch check repath.maybe_offer_repath already runs on a fresh
+    Ctrl+V paste, reused here so Shift+E also catches a cross-shot Read
+    that slipped past that check (typed by hand, or pasted before this
+    repath tooling existed). Silently returns None (no notion of "the
+    right shot") if $FTRACK_RENDER_PATH isn't set."""
+    current_root = os.environ.get("FTRACK_RENDER_PATH")
+    if not current_root:
+        return None
+    parsed = _parse_read_file(read["file"].value())
+    if parsed is None:
+        return None
+    layer_dir, _version, pass_name = parsed
+    if layer_dir.startswith(current_root):
+        return None
+    return layer_dir, pass_name, os.path.basename(layer_dir)
+
+
+def _maybe_repath_cross_shot_reads(reads):
+    """Given the working set bump_selected_reads is about to act on, find
+    any live-and-in-scope Reads that look like they're from another shot
+    (see _cross_shot_layer), ask once (nuke.ask, same as repath.py's
+    paste-time popup -- one popup for the batch, not one per Read), and
+    repath whatever the artist confirms to this shot's latest version of
+    the same layer/pass. A Read that stays mismatched afterward (artist
+    said no, or no matching layer folder found -- see
+    _find_matching_layer_dir's ambiguous-match case) is left alone and
+    falls through to the normal per-pass version bump below, same as
+    before this check existed."""
+    current_root = os.environ.get("FTRACK_RENDER_PATH")
+    if not current_root:
+        return
+
+    mismatched = []  # (read, layer_dir, pass_name, old_layer_name)
+    for read in reads:
+        info = _cross_shot_layer(read)
+        if info is not None:
+            mismatched.append((read,) + info)
+    if not mismatched:
+        return
+
+    old_roots = sorted({os.path.dirname(d) for _, d, _, _ in mismatched})
+    if not nuke.ask(
+        f"{len(mismatched)} selected Read(s) look like they're from "
+        f"another shot ({', '.join(old_roots)}).\n"
+        "Repath to this shot's latest renders before changing version?"
+    ):
+        return
+
+    for read, layer_dir, pass_name, old_layer_name in mismatched:
+        new_layer_name = _find_matching_layer_dir(current_root, old_layer_name)
+        if new_layer_name is None:
+            print(f"_maybe_repath_cross_shot_reads: {read.name()} skipped -- "
+                  f"no unambiguous match for '{old_layer_name}' under {current_root}")
+            continue
+        new_layer_dir = f"{current_root}/{new_layer_name}"
+        try:
+            version, seq = _resolve_pass(new_layer_dir, pass_name)
+        except ValueError as e:
+            print(f"_maybe_repath_cross_shot_reads: {read.name()} skipped -- {e}")
+            continue
+        _apply_read_sequence(read, pass_name, version, seq, new_layer_dir)
+        print(f"_maybe_repath_cross_shot_reads: {read.name()} repathed "
+              f"{old_layer_name} -> {new_layer_name} ({version})")
+
+
 def _maybe_rename_read(read):
     """Renames read to the READ_<LAYER>_<PASS> convention (see
     layer_branch._read_node_name) if its file matches the layer-branch
@@ -312,6 +384,13 @@ def bump_selected_reads(direction):
     original_selection = nuke.selectedNodes()
     explicit_selection = bool(original_selection)
     reads = _working_read_nodes()
+
+    # In-scope for the cross-shot check: same set the loop below will
+    # actually touch (an unselected, not-live nodes-in-view Read is
+    # skipped either way, so asking about it would be noise).
+    in_scope = [r for r in reads if explicit_selection or _is_live_read(r)]
+    _maybe_repath_cross_shot_reads(in_scope)
+
     updated = 0
     skipped = 0
     for read in reads:

@@ -99,6 +99,50 @@ def _resolve_pass(layer_dir, pass_name):
     return vname, _collapse_sequence(f"{layer_dir}/{vname}", pass_name)
 
 
+def _find_matching_layer_dir(current_root, old_layer_name):
+    """Given a layer folder name from another shot (e.g. "chars_370"), find
+    the equivalent folder under this shot's render root (current_root).
+    Strips a trailing "_<digits>" to get the shot-independent base name
+    ("chars") and looks for a folder under current_root matching that base
+    name -- exactly, or with any numeric suffix (covers "chars" alone too,
+    for shows that don't suffix layer folders with the shot number at
+    all). Falls back to the literal old name unchanged if nothing under
+    current_root matches the base name but does match the old name
+    verbatim (unusual, but cheaper to allow than to hard-fail on). Returns
+    None if no folder under current_root plausibly corresponds to this
+    layer, OR if more than one does -- an ambiguous match (e.g. sh320's
+    render root holding both "chars_320" and a stray unrelated "chars_340")
+    is deliberately never guessed at; the caller reports the Read as
+    skipped instead. Shared by repath.py (Ctrl+V) and
+    veriter.versions.py (Shift+E) -- both need the same "does this Read
+    belong to the current shot" answer."""
+    m = _TRAILING_SHOT_NUM_RE.match(old_layer_name)
+    base_name = m.group(1) if m else old_layer_name
+
+    try:
+        entries = os.listdir(current_root)
+    except OSError:
+        return None
+
+    if base_name in entries:
+        return base_name
+
+    candidates = []
+    for entry in entries:
+        em = _TRAILING_SHOT_NUM_RE.match(entry)
+        if em and em.group(1) == base_name:
+            candidates.append(entry)
+    if len(candidates) == 1:
+        return candidates[0]
+    if len(candidates) > 1:
+        return None  # ambiguous -- caller reports this Read as skipped
+
+    if old_layer_name in entries:
+        return old_layer_name
+
+    return None
+
+
 def _apply_read_sequence(read, pass_name, version, seq, layer_dir):
     """Set a Read node's file/frame-range knobs from a resolved (version,
     seq) pair, and flag missing frames (orange tile_color + label) instead

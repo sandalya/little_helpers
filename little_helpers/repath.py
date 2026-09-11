@@ -28,53 +28,23 @@ import re
 
 import nuke
 
-from .layer_branch import _TRAILING_SHOT_NUM_RE, _apply_read_sequence, _resolve_pass
+from .layer_branch import (
+    _apply_read_sequence,
+    _find_matching_layer_dir,
+    _resolve_pass,
+)
 from .veriter.versions import _is_live_read, _parse_read_file
 
-# _TRAILING_SHOT_NUM_RE (see layer_branch.py) strips a layer folder's
+# _find_matching_layer_dir (layer_branch.py) strips a layer folder's
 # trailing "_<shot-number>" (bg_320 -> bg) -- confirmed live 2026-09-10 by
 # a real WinError 3 on paste (sh320 -> sh370): a naive basename copy (old
 # code here: layer_name = basename(old_layer_dir)) carries the OLD shot's
 # number straight into the new shot's render root, where it doesn't exist.
-
-
-def _find_matching_layer_dir(current_root, old_layer_name):
-    """Given a layer folder name pasted in from another shot (e.g.
-    "bg_320"), find the equivalent folder under this shot's render root
-    (current_root). Strips a trailing "_<digits>" to get the
-    shot-independent base name ("bg") and looks for a folder under
-    current_root matching that base name -- exactly, or with any numeric
-    suffix (covers "bg" alone too, for shows that don't suffix layer
-    folders with the shot number at all). Falls back to the literal old
-    name unchanged if nothing under current_root matches the base name
-    but does match the old name verbatim (unusual, but cheaper to allow
-    than to hard-fail on). Returns None if no folder under current_root
-    plausibly corresponds to this layer."""
-    m = _TRAILING_SHOT_NUM_RE.match(old_layer_name)
-    base_name = m.group(1) if m else old_layer_name
-
-    try:
-        entries = os.listdir(current_root)
-    except OSError:
-        return None
-
-    if base_name in entries:
-        return base_name
-
-    candidates = []
-    for entry in entries:
-        em = _TRAILING_SHOT_NUM_RE.match(entry)
-        if em and em.group(1) == base_name:
-            candidates.append(entry)
-    if len(candidates) == 1:
-        return candidates[0]
-    if len(candidates) > 1:
-        return None  # ambiguous -- caller reports this Read as skipped
-
-    if old_layer_name in entries:
-        return old_layer_name
-
-    return None
+# It also declines to guess when the current shot's render root has more
+# than one folder matching the same base name (ambiguous -- e.g. sh320
+# holding both "chars_320" and a stray "chars_340") -- confirmed live
+# 2026-09-11, see BACKLOG.md TODO for surfacing that case better than a
+# silent Script Editor skip line.
 
 
 def _rename_layer_in_text(text, old_layer_name, new_layer_name):
