@@ -30,21 +30,22 @@ import nuke
 
 from .layer_branch import (
     _apply_read_sequence,
-    _find_matching_layer_dir,
+    _find_layer_candidates,
     _resolve_pass,
 )
 from .veriter.versions import _is_live_read, _parse_read_file
 
-# _find_matching_layer_dir (layer_branch.py) strips a layer folder's
+# _find_layer_candidates (layer_branch.py) strips a layer folder's
 # trailing "_<shot-number>" (bg_320 -> bg) -- confirmed live 2026-09-10 by
 # a real WinError 3 on paste (sh320 -> sh370): a naive basename copy (old
 # code here: layer_name = basename(old_layer_dir)) carries the OLD shot's
 # number straight into the new shot's render root, where it doesn't exist.
 # It also declines to guess when the current shot's render root has more
 # than one folder matching the same base name (ambiguous -- e.g. sh320
-# holding both "chars_320" and a stray "chars_340") -- confirmed live
-# 2026-09-11, see BACKLOG.md TODO for surfacing that case better than a
-# silent Script Editor skip line.
+# holding both "chars_320" and a stray "chars_340", confirmed live
+# 2026-09-11) -- those go into the popup's needs_input rows below, each
+# with a QComboBox pre-filtered to the actual candidates, instead of the
+# old behaviour of silently lumping them in with "no match at all".
 
 
 def _rename_layer_in_text(text, old_layer_name, new_layer_name):
@@ -71,14 +72,19 @@ def paste_and_maybe_repath():
 
 def maybe_offer_repath(pasted_nodes):
     """Given the just-pasted node selection, look for two things and, if
-    either is found, ask once (nuke.ask, per Sashok's call -- no custom
-    HUD needed for a yes/no) before touching anything:
+    either is found, put up one dialog (repath_ui.ask_repath -- a custom
+    PySide dialog replacing the old plain nuke.ask() text blob, see
+    BACKLOG.md 2026-09-11) before touching anything:
 
     - live Read nodes (feed something else in the graph -- see
       veriter._is_live_read) whose file path resolves to a layer_dir
       outside the CURRENT script's $FTRACK_RENDER_PATH, i.e. brought in
-      from a different shot's branch. These get repathed to this shot's
-      same layer/pass, latest version on disk.
+      from a different shot's branch. Each is triaged by
+      layer_branch._find_layer_candidates into "resolved" (single
+      unambiguous match -- repathed straight away if the artist confirms)
+      or "needs_input" (ambiguous same-base-name candidates, or none at
+      all -- the dialog shows one QComboBox per row, pre-filtered to the
+      real candidates when there are any).
     - disconnected history Read nodes that came along for the ride --
       per Sashok's call (2026-09-10), these are just deleted rather than
       repathed or reparented; he reopens history by hand if a shot
@@ -100,7 +106,8 @@ def maybe_offer_repath(pasted_nodes):
         return
 
     history = []
-    mismatched = []  # (read, old_layer_dir, pass_name)
+    resolved = []       # (read, old_layer_dir, pass_name, new_layer_name)
+    needs_input = []    # (read, old_layer_dir, pass_name, candidates, all_entries)
     for read in reads:
         parsed = _parse_read_file(read["file"].value())
         if parsed is None:
@@ -109,50 +116,52 @@ def maybe_offer_repath(pasted_nodes):
         if not _is_live_read(read):
             history.append(read)
             continue
-        if not layer_dir.startswith(current_root):
-            mismatched.append((read, layer_dir, pass_name))
+        if layer_dir.startswith(current_root):
+            continue
+        old_layer_name = os.path.basename(layer_dir)
+        info = _find_layer_candidates(current_root, old_layer_name)
+        if info["match"] is not None:
+            resolved.append((read, layer_dir, pass_name, info["match"]))
+        else:
+            needs_input.append(
+                (read, layer_dir, pass_name, info["candidates"], info["all_entries"])
+            )
 
     stickies = [n for n in pasted_nodes if n.Class() == "StickyNote"]
 
-    if not history and not mismatched:
+    if not history and not resolved and not needs_input:
         return
 
-    lines = []
-    if mismatched:
-        old_roots = sorted({os.path.dirname(d) for _, d, _ in mismatched})
-        lines.append(
-            f"{len(mismatched)} Read(s) look like they're from another "
-            f"shot ({', '.join(old_roots)})."
-        )
-    if history:
-        lines.append(f"{len(history)} disconnected history Read(s) came along too.")
-    lines.append(
-        "Repath the mismatched Reads to this shot's latest renders"
-        + (" and delete the history Reads" if history else "")
-        + (", and relabel branch StickyNotes" if stickies else "")
-        + "?"
-    )
-
-    if not nuke.ask("\n".join(lines)):
+    from .repath_ui import ask_repath
+    proceed, picks = ask_repath(resolved, needs_input, history, stickies)
+    if not proceed:
         return
 
     repathed, skipped = 0, []
     layer_renames = {}  # old_layer_name -> new_layer_name, for StickyNotes below
-    for read, layer_dir, pass_name in mismatched:
+
+    def _apply(read, layer_dir, pass_name, new_layer_name):
+        nonlocal repathed
         old_layer_name = os.path.basename(layer_dir)
-        new_layer_name = _find_matching_layer_dir(current_root, old_layer_name)
-        if new_layer_name is None:
-            skipped.append(read.name())
-            continue
         new_layer_dir = f"{current_root}/{new_layer_name}"
         try:
             version, seq = _resolve_pass(new_layer_dir, pass_name)
         except ValueError:
             skipped.append(read.name())
-            continue
+            return
         _apply_read_sequence(read, pass_name, version, seq, new_layer_dir)
         repathed += 1
         layer_renames[old_layer_name] = new_layer_name
+
+    for read, layer_dir, pass_name, new_layer_name in resolved:
+        _apply(read, layer_dir, pass_name, new_layer_name)
+
+    for read, layer_dir, pass_name, _candidates, _all_entries in needs_input:
+        chosen = picks.get(read.name())
+        if chosen is None:
+            skipped.append(read.name())
+            continue
+        _apply(read, layer_dir, pass_name, chosen)
 
     for read in history:
         nuke.delete(read)
