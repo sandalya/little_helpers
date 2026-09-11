@@ -16,6 +16,15 @@ _LAYER_BRANCH_PASSES = ("lights", "beauty", "tech", "crypto")
 _VERSION_DIR_RE = re.compile(r"^v(\d+)$", re.IGNORECASE)
 _FRAME_FILE_RE_TMPL = r"^{pass_name}_product\.(\d+)\.([A-Za-z0-9]+)$"
 
+# Studio layer-folder naming convention (confirmed live 2026-09-10, see
+# nuke/docs/NUKE_NOTES.md): render layer folders are named
+# "<layer>_<shot-number>" on some projects (bg_320, chars_370, ...) and
+# plain "<layer>" on others -- not universal. Strips a trailing
+# "_<digits>" to get the shot-independent base name. Shared with repath.py
+# (cross-shot layer matching) and used here to keep the shot number out of
+# a Read's auto-generated name (READ_CHARS_BEAUTY, not READ_CHARS_370_BEAUTY).
+_TRAILING_SHOT_NUM_RE = re.compile(r"^(.+?)_\d+$")
+
 
 def _collapse_sequence(dirpath, pass_name):
     """Scan dirpath for '<pass_name>_product.<frame>.<ext>' files and
@@ -125,6 +134,21 @@ def _apply_read_sequence(read, pass_name, version, seq, layer_dir):
         read["tile_color"].setValue(0)  # clear any stale missing-frames flag
 
 
+def _read_node_name(layer_dir, pass_name):
+    """READ_<LAYER>_<PASS>, e.g. READ_BG_BEAUTY, from layer_dir's own
+    folder name and pass_name -- shared by build_layer_branch (naming a
+    fresh Read) and versions.bump_selected_reads (renaming a Read built
+    before this convention existed, on Shift+E). Strips a trailing shot
+    number the same way _find_matching_layer_dir does (see
+    _TRAILING_SHOT_NUM_RE) -- the shot is already the script itself, so
+    it's noise in a Read's name."""
+    layer_name = layer_dir.rstrip("/").rsplit("/", 1)[-1]
+    m = _TRAILING_SHOT_NUM_RE.match(layer_name)
+    if m:
+        layer_name = m.group(1)
+    return f"READ_{layer_name}_{pass_name}".upper()
+
+
 def build_layer_branch(layer_name):
     """Function 1 init, per docs/NUKE_COMP_LAYER_ASSEMBLY.md: 4 Read nodes
     (lights/beauty/tech/crypto) + the ShuffleCopy/Copy assembly chain + an
@@ -156,6 +180,13 @@ def build_layer_branch(layer_name):
     for pass_name in _LAYER_BRANCH_PASSES:
         version, seq = _resolve_pass(layer_dir, pass_name)
         read = make("Read")
+        # READ_<LAYER>_<PASS>, e.g. READ_BG_BEAUTY -- per Sashok's ask, so a
+        # layer branch's Reads read as what they are in the DAG/Node graph
+        # search instead of Nuke's meaningless auto-numbered Read33 etc.
+        # uncollide=True handles a second branch for the same layer ending
+        # up in the same script (history Reads still get the plain
+        # auto-numbered name -- see _sync_history_reads, out of scope here).
+        read.setName(_read_node_name(layer_dir, pass_name), uncollide=True)
         _apply_read_sequence(read, pass_name, version, seq, layer_dir)
         if pass_name == "beauty":
             read["postage_stamp"].setValue(True)  # the one Read artists

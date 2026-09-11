@@ -13,7 +13,13 @@ import re
 
 import nuke
 
-from ..layer_branch import _VERSION_DIR_RE, _apply_read_sequence, _available_versions, _collapse_sequence
+from ..layer_branch import (
+    _VERSION_DIR_RE,
+    _apply_read_sequence,
+    _available_versions,
+    _collapse_sequence,
+    _read_node_name,
+)
 from ..nuke_utils import nodes_in_view
 
 _READ_PATH_RE = re.compile(
@@ -208,6 +214,8 @@ def _bump_read_version(read, direction):
 
     current_num = int(_VERSION_DIR_RE.match(current_version).group(1))
     old_first, old_last = read["first"].value(), read["last"].value()
+    root = nuke.root()
+    root_first, root_last = root.firstFrame(), root.lastFrame()
 
     if direction == "latest":
         target_num, target_vname = versions[-1]
@@ -218,8 +226,23 @@ def _bump_read_version(read, direction):
             # range before skipping just because the version number didn't
             # move (confirmed live on sh320/bg: v008 stuck at 1001-1001
             # after the shot finished rendering to 1001-1029 in v008).
+            #
+            # That disk-diff alone isn't enough on its own: it only catches
+            # a range that changed since this Read was last set, not a
+            # range that was ALREADY short of the shot the whole time (a
+            # Read built while only one frame existed, whose disk range
+            # then happens to match what's on disk right now because
+            # nothing rendered since -- same sh320/bg Read8 case, seen
+            # stuck at 1001-1001 against a 1001-1029 shot). So also skip
+            # only if the Read's current range actually covers root's
+            # frame range -- same "incomplete" question _read_status
+            # already answers for the HUD's status panel, asked here too
+            # so a short Read never reads as "already at latest" just
+            # because the on-disk bytes didn't move this time.
             seq = _collapse_sequence(f"{layer_dir}/{target_vname}", pass_name)
-            if not seq or (seq["first"] == old_first and seq["last"] == old_last):
+            unchanged = seq and seq["first"] == old_first and seq["last"] == old_last
+            incomplete = old_first > root_first or old_last < root_last
+            if not seq or (unchanged and not incomplete):
                 return "skipped", "already at latest", None
     elif direction == "up":
         higher = [(n, v) for n, v in versions if n > current_num]
@@ -244,6 +267,24 @@ def _bump_read_version(read, direction):
     else:
         detail = f"{current_version} -> {target_vname}"
     return "updated", detail, (layer_dir, pass_name, target_num)
+
+
+def _maybe_rename_read(read):
+    """Renames read to the READ_<LAYER>_<PASS> convention (see
+    layer_branch._read_node_name) if its file matches the layer-branch
+    path convention and its current name isn't already that -- catches
+    Reads built before this naming convention existed (or by hand), so
+    running Shift+E on an old Read fixes its name along with its version.
+    No-op for anything _parse_read_file can't make sense of."""
+    parsed = _parse_read_file(read["file"].value())
+    if parsed is None:
+        return
+    layer_dir, _version, pass_name = parsed
+    target = _read_node_name(layer_dir, pass_name)
+    if read.name() != target:
+        old_name = read.name()
+        read.setName(target, uncollide=True)
+        print(f"_maybe_rename_read: {old_name} -> {read.name()}")
 
 
 def bump_selected_reads(direction):
@@ -300,6 +341,7 @@ def bump_selected_reads(direction):
         else:
             skipped += 1
         print(f"bump_selected_reads({direction!r}): {read.name()} {status} -- {detail}")
+        _maybe_rename_read(read)
     print(f"bump_selected_reads({direction!r}): {updated} updated, {skipped} skipped")
 
     for n in nuke.selectedNodes():

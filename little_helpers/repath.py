@@ -28,20 +28,14 @@ import re
 
 import nuke
 
-from .layer_branch import _apply_read_sequence, _resolve_pass
+from .layer_branch import _TRAILING_SHOT_NUM_RE, _apply_read_sequence, _resolve_pass
 from .veriter.versions import _is_live_read, _parse_read_file
 
-# Studio layer-folder naming convention, confirmed live 2026-09-10 by a
-# real WinError 3 on paste (sh320 -> sh370): render layer folders are
-# named "<layer>_<shot-number>" (bg_320, atmo_320, chars_320 under sh320;
-# bg_370, atmo_370, chars_370 under sh370) -- the shot number is baked
-# into the folder name itself, not just the path above it. A naive
-# basename copy (old code: layer_name = basename(old_layer_dir)) carries
-# the OLD shot's number straight into the new shot's render root, where
-# it doesn't exist. This strips a trailing "_<digits>" to get the
-# shot-independent base name ("bg"), which is what actually needs to
-# match between shots.
-_TRAILING_SHOT_NUM_RE = re.compile(r"^(.+?)_\d+$")
+# _TRAILING_SHOT_NUM_RE (see layer_branch.py) strips a layer folder's
+# trailing "_<shot-number>" (bg_320 -> bg) -- confirmed live 2026-09-10 by
+# a real WinError 3 on paste (sh320 -> sh370): a naive basename copy (old
+# code here: layer_name = basename(old_layer_dir)) carries the OLD shot's
+# number straight into the new shot's render root, where it doesn't exist.
 
 
 def _find_matching_layer_dir(current_root, old_layer_name):
