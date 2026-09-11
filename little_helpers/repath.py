@@ -84,7 +84,10 @@ def maybe_offer_repath(pasted_nodes):
       unambiguous match -- repathed straight away if the artist confirms)
       or "needs_input" (ambiguous same-base-name candidates, or none at
       all -- the dialog shows one QComboBox per row, pre-filtered to the
-      real candidates when there are any).
+      real candidates when there are any). Grouped by old_layer_name, not
+      one row per Read: a layer-branch's 4 passes (lights/beauty/tech/
+      crypto) share one layer_dir, so an ambiguous match applies to all of
+      them identically -- one decision per layer, not per pass.
     - disconnected history Read nodes that came along for the ride --
       per Sashok's call (2026-09-10), these are just deleted rather than
       repathed or reparented; he reopens history by hand if a shot
@@ -107,7 +110,7 @@ def maybe_offer_repath(pasted_nodes):
 
     history = []
     resolved = []       # (read, old_layer_dir, pass_name, new_layer_name)
-    needs_input = []    # (read, old_layer_dir, pass_name, candidates, all_entries)
+    needs_input_groups = {}  # old_layer_name -> {"candidates", "all_entries", "reads": [(read, layer_dir, pass_name), ...]}
     for read in reads:
         parsed = _parse_read_file(read["file"].value())
         if parsed is None:
@@ -119,13 +122,29 @@ def maybe_offer_repath(pasted_nodes):
         if layer_dir.startswith(current_root):
             continue
         old_layer_name = os.path.basename(layer_dir)
+        # Grouped by old_layer_name, not one row per Read: a layer-branch's
+        # 4 passes (lights/beauty/tech/crypto) all live under the same
+        # layer_dir, so they share the exact same candidates/all_entries --
+        # one dropdown decision per LAYER, not one per pass (confirmed by
+        # Sashok 2026-09-11: a real chars_370 paste showed 4 near-identical
+        # rows, one per pass, for what was really one ambiguous folder).
+        if old_layer_name in needs_input_groups:
+            needs_input_groups[old_layer_name]["reads"].append((read, layer_dir, pass_name))
+            continue
         info = _find_layer_candidates(current_root, old_layer_name)
         if info["match"] is not None:
             resolved.append((read, layer_dir, pass_name, info["match"]))
         else:
-            needs_input.append(
-                (read, layer_dir, pass_name, info["candidates"], info["all_entries"])
-            )
+            needs_input_groups[old_layer_name] = {
+                "candidates": info["candidates"],
+                "all_entries": info["all_entries"],
+                "reads": [(read, layer_dir, pass_name)],
+            }
+
+    needs_input = [
+        (old_layer_name, g["candidates"], g["all_entries"], g["reads"])
+        for old_layer_name, g in needs_input_groups.items()
+    ]
 
     stickies = [n for n in pasted_nodes if n.Class() == "StickyNote"]
 
@@ -156,12 +175,13 @@ def maybe_offer_repath(pasted_nodes):
     for read, layer_dir, pass_name, new_layer_name in resolved:
         _apply(read, layer_dir, pass_name, new_layer_name)
 
-    for read, layer_dir, pass_name, _candidates, _all_entries in needs_input:
-        chosen = picks.get(read.name())
-        if chosen is None:
-            skipped.append(read.name())
-            continue
-        _apply(read, layer_dir, pass_name, chosen)
+    for old_layer_name, _candidates, _all_entries, group_reads in needs_input:
+        chosen = picks.get(old_layer_name)
+        for read, layer_dir, pass_name in group_reads:
+            if chosen is None:
+                skipped.append(read.name())
+                continue
+            _apply(read, layer_dir, pass_name, chosen)
 
     for read in history:
         nuke.delete(read)

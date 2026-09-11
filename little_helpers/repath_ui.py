@@ -18,8 +18,6 @@ A Yes/Ні confirm with per-row pick state wants blocking exec_() and native
 window chrome, not the click-away pattern those use.
 """
 
-import os
-
 try:
     from PySide6 import QtWidgets, QtCore
 except ImportError:
@@ -78,27 +76,38 @@ class _RepathDialog(QtWidgets.QDialog):
         layout.setSpacing(10)
 
         if needs_input:
-            plural = "шлях" if len(needs_input) == 1 else "шляхи"
+            total_reads = sum(len(group_reads) for _, _, _, group_reads in needs_input)
+            read_word = "шлях" if total_reads == 1 else "шляхи"
+            layer_word = "шар" if len(needs_input) == 1 else "шари"
             section = QtWidgets.QLabel(
-                f"{len(needs_input)} {plural} не вдалось визначити автоматично"
+                f"{total_reads} {read_word} ({len(needs_input)} {layer_word}) "
+                "не вдалось визначити автоматично"
             )
             section.setProperty("role", "section")
             layout.addWidget(section)
 
-            for read, old_dir, pass_name, candidates, all_entries in needs_input:
+            # One row per LAYER (old_layer_name), not per Read/pass -- a
+            # layer-branch's 4 passes (lights/beauty/tech/crypto) share one
+            # layer_dir, so they share the same candidates and the same
+            # pick; see repath.maybe_offer_repath's grouping comment.
+            for old_layer_name, candidates, all_entries, group_reads in needs_input:
                 row = QtWidgets.QFrame()
                 row.setProperty("role", "row_ambiguous" if candidates else "row_unmatched")
                 row_layout = QtWidgets.QVBoxLayout(row)
                 row_layout.setContentsMargins(10, 8, 10, 8)
                 row_layout.setSpacing(4)
 
-                head = QtWidgets.QLabel(f"{read.name()} · {pass_name}")
+                head = QtWidgets.QLabel(old_layer_name + "  →  ?")
                 head.setProperty("role", "rowhead")
                 row_layout.addWidget(head)
 
-                path_label = QtWidgets.QLabel(os.path.basename(old_dir) + "  →  ?")
-                path_label.setProperty("role", "rowpath")
-                row_layout.addWidget(path_label)
+                pass_names = ", ".join(pass_name for _, _, pass_name in group_reads)
+                detail_label = QtWidgets.QLabel(
+                    f"{len(group_reads)} Read: {pass_names}"
+                )
+                detail_label.setProperty("role", "rowpath")
+                detail_label.setWordWrap(True)
+                row_layout.addWidget(detail_label)
 
                 reason = QtWidgets.QLabel(
                     f"{len(candidates)} схожих варіанти в цьому шоті"
@@ -116,7 +125,7 @@ class _RepathDialog(QtWidgets.QDialog):
                 pick_row.addWidget(combo, 1)
                 row_layout.addLayout(pick_row)
 
-                self._combos[read.name()] = combo
+                self._combos[old_layer_name] = combo
                 layout.addWidget(row)
 
             layout.addWidget(_hline())
@@ -177,8 +186,11 @@ def ask_repath(resolved, needs_input, history, stickies):
     resolved: [(read, old_layer_dir, pass_name, new_layer_name), ...] --
       single unambiguous match (layer_branch._find_layer_candidates),
       auto-repathed if the artist confirms.
-    needs_input: [(read, old_layer_dir, pass_name, candidates, all_entries), ...]
-      -- one QComboBox per row, pre-filtered to `candidates` when there are
+    needs_input: [(old_layer_name, candidates, all_entries, group_reads), ...]
+      -- one row (one QComboBox) per LAYER, not per Read: group_reads is
+      [(read, old_layer_dir, pass_name), ...] for every pass of that same
+      layer, since they all share the same candidates/all_entries and the
+      same pick. Combo is pre-filtered to `candidates` when there are
       same-base-name options, falling back to the shot's full render root
       (`all_entries`) when there isn't even that.
     history: disconnected Read nodes riding along (shown as a footnote,
@@ -187,10 +199,11 @@ def ask_repath(resolved, needs_input, history, stickies):
 
     Returns (proceed, picks). proceed is False if the artist hit Ні or
     closed the dialog -- picks is {} in that case. Otherwise picks maps
-    read.name() -> the layer folder name chosen in that row's combo, for
-    every needs_input row where the artist picked something other than
-    "не чіпати" (rows left on that default are the caller's to treat as
-    skipped, same as an unresolved match always has been)."""
+    old_layer_name -> the layer folder name chosen in that row's combo
+    (applies to every Read in that layer's group_reads), for every row
+    where the artist picked something other than "не чіпати" (rows left
+    on that default are the caller's to treat as skipped, same as an
+    unresolved match always has been)."""
     dlg = _RepathDialog(resolved, needs_input, history, stickies)
     proceed = dlg.exec_() == QtWidgets.QDialog.Accepted
     return proceed, (dlg.picks() if proceed else {})
