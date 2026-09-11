@@ -123,7 +123,7 @@ _RELOAD_ORDER = (
     "veriter.versions", "veriter.version_ui",
     "layer_picker_ui",
     "split_layers.nuke_actions", "split_layers.split_layers",
-    "repath",
+    "repath_ui", "repath",
 )
 
 
