@@ -1,7 +1,7 @@
 """
 little_helpers.repath_ui
 
-Modal confirm dialog for repath.py's paste-time popup (Ctrl+V) -- replaces
+Modal confirm dialog for repath.py's paste-time popup (Alt+V) -- replaces
 the old plain nuke.ask() text blob with a compact colour-coded summary
 (green = will auto-repath, amber = a few same-base-name candidates to pick
 from, red = no candidate at all in this shot) plus one QComboBox per row

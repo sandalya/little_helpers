@@ -23,8 +23,12 @@ SPLIT_LAYERS_MENU_PATH = "Little Helpers/Split Layers"
 # Overrides Nuke's own built-in Paste command in place (nuke.menu("Nuke"),
 # not nuke.menu("Nodes") like the three paths above -- confirmed live via
 # a recursive nuke.menu() scan, same "wrong top-level menu" gotcha as the
-# Shift+D collision elsewhere in this project's history) so Ctrl+V itself
-# triggers the repath-on-paste check. See repath.py.
+# Shift+D collision elsewhere in this project's history) so Alt+V triggers
+# the repath-on-paste check -- Sashok's ask (2026-09-11), rebound from the
+# original Ctrl+V. NOT yet confirmed live whether plain Ctrl+V still does
+# anything at this menu path afterward (the native Edit/Paste item this
+# replaces is gone via removeItem, same as before the rebind) -- verify on
+# pc137 rather than assuming either way. See repath.py.
 PASTE_OVERRIDE_MENU_PATH = "Edit/Paste"
 
 
@@ -64,12 +68,12 @@ def show_split_layers():
     split_layers.main()
 
 
-# ---- Repath-on-paste hookup (Ctrl+V override) ----------------------------
+# ---- Repath-on-paste hookup (Alt+V override) ------------------------------
 # See repath.py for the actual detection/repath logic. This stays thin glue
 # only, same lazy-import pattern as show_version_hud/show_split_layers above.
 
 def paste_and_maybe_repath():
-    """Ctrl+V override -- pastes normally, then checks the pasted selection
+    """Alt+V override -- pastes normally, then checks the pasted selection
     for cross-shot Reads / stray history Reads. See repath.py."""
     from .repath import paste_and_maybe_repath as _paste_and_maybe_repath
     _paste_and_maybe_repath()
@@ -114,7 +118,7 @@ def register_menu():
         PASTE_OVERRIDE_MENU_PATH,
         "import little_helpers; little_helpers.reload_all(); "
         "little_helpers.paste_and_maybe_repath()",
-        "Ctrl+V",
+        "Alt+V",
     )
 
 

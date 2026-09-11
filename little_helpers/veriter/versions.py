@@ -277,7 +277,7 @@ def _cross_shot_layer(read):
     layer_dir resolves outside the current shot's $FTRACK_RENDER_PATH,
     return (layer_dir, pass_name, old_layer_name) -- else None. Same
     mismatch check repath.maybe_offer_repath already runs on a fresh
-    Ctrl+V paste, reused here so Shift+E also catches a cross-shot Read
+    Alt+V paste, reused here so Shift+E also catches a cross-shot Read
     that slipped past that check (typed by hand, or pasted before this
     repath tooling existed). Silently returns None (no notion of "the
     right shot") if $FTRACK_RENDER_PATH isn't set."""

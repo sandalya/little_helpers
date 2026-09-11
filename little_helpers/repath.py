@@ -12,15 +12,16 @@ Function 1 (layer_branch.build_layer_branch) and Function 2
 (veriter.versions) already use. This module is glue over that code, not a
 new engine.
 
-Hooked into Ctrl+V itself (see __init__.py's register_menu, which
-overrides Nuke's built-in Nuke/Edit/Paste command -- confirmed live via a
-recursive nuke.menu() scan that Paste lives there, not under a plain
-top-level "Edit" menu, same class of hidden-menu gotcha as the Shift+D
-collision documented elsewhere in this project) rather than
-nuke.addOnUserCreate: a multi-node paste fires addOnUserCreate once per
-node, but Ctrl+V fires once, and Nuke has already selected exactly the
-pasted nodes by the time our wrapper regains control -- so the whole
-pasted batch is inspected as one group, with one popup, not N.
+Hooked into Alt+V itself (rebound from the original Ctrl+V 2026-09-11, per
+Sashok's ask -- see __init__.py's register_menu, which overrides Nuke's
+built-in Nuke/Edit/Paste command -- confirmed live via a recursive
+nuke.menu() scan that Paste lives there, not under a plain top-level
+"Edit" menu, same class of hidden-menu gotcha as the Shift+D collision
+documented elsewhere in this project) rather than nuke.addOnUserCreate: a
+multi-node paste fires addOnUserCreate once per node, but this hotkey
+fires once, and Nuke has already selected exactly the pasted nodes by the
+time our wrapper regains control -- so the whole pasted batch is
+inspected as one group, with one popup, not N.
 """
 
 import os
@@ -61,9 +62,9 @@ def _rename_layer_in_text(text, old_layer_name, new_layer_name):
 
 
 def paste_and_maybe_repath():
-    """Replacement command for Nuke's built-in Ctrl+V (see __init__.py's
-    register_menu). Pastes exactly as Nuke's own Edit/Paste does, then
-    inspects the resulting selection."""
+    """Bound to Alt+V (see __init__.py's register_menu), replacing Nuke's
+    built-in Ctrl+V paste at the Edit/Paste menu path. Pastes exactly as
+    Nuke's own Edit/Paste does, then inspects the resulting selection."""
     import nukescripts
     with nuke.lastHitGroup():
         nuke.nodePaste(nukescripts.cut_paste_file())

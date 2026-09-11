@@ -122,7 +122,7 @@ def _find_layer_candidates(current_root, old_layer_name):
       an ambiguous same-base-name candidate; [] if current_root couldn't
       be listed
 
-    Shared by repath.py (Ctrl+V) and veriter.versions.py (Shift+E) via the
+    Shared by repath.py (Alt+V) and veriter.versions.py (Shift+E) via the
     _find_matching_layer_dir wrapper below -- both need the same "does
     this Read belong to the current shot" answer."""
     m = _TRAILING_SHOT_NUM_RE.match(old_layer_name)
