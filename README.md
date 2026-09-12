@@ -25,6 +25,7 @@ layer-branch comp convention.
 | Change Layer Version | `Shift+E` | Jump to latest / step version up / step version down on the selected Read node(s) (or, if nothing's selected, whatever Reads are visible in the Node Graph). Optional "History" checkbox keeps a row of old-version reference Reads in sync next to the live one. |
 | Split Layers | `F10` | Sashok's per-lightgroup comp splitter, standalone. Also reachable as a checkbox inside the Create Layer Branch panel, which runs it on the branch it just built. |
 | Repath on Paste | `Alt+V` | Overrides `Edit/Paste`. Pastes normally, then checks the pasted selection for Read nodes from another shot's render root and offers to repoint them at this shot's own renders (a dialog with one dropdown per ambiguous/unmatched layer), deletes any disconnected history Reads that came along, and relabels branch StickyNotes to match. |
+| Paste (Plain) | `Ctrl+V` | Nuke's own paste, unmodified, no repath check -- exists because claiming `Edit/Paste` for the row above takes plain `Ctrl+V` with it (Nuke doesn't fall back to its native paste on its own). |
 
 ## Install
 

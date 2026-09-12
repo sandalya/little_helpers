@@ -31,6 +31,15 @@ SPLIT_LAYERS_MENU_PATH = "Little Helpers/Split Layers"
 # pc137 rather than assuming either way. See repath.py.
 PASTE_OVERRIDE_MENU_PATH = "Edit/Paste"
 
+# Own menu entry for the plain-paste fallback above -- deliberately not
+# "Edit/Paste" (already claimed, one hotkey per command) and not visible
+# under "Little Helpers/..." (this isn't an artist-facing tool, it's a
+# restored default). Nuke's own paste-adjacent commands use an "@;" name
+# prefix (Edit/@;Paste2) that looks like it might mean "hidden from the
+# menu" -- NOT confirmed what it actually does, so not gambled on here;
+# a plain readable label is guaranteed to just work.
+PASTE_PLAIN_MENU_PATH = "Edit/Paste (Plain)"
+
 
 # ---- Version manager hookup (Function 2, Shift+E) ------------------------
 # Calls the standalone veriter tool (little_helpers/veriter/) unmodified --
@@ -79,6 +88,14 @@ def paste_and_maybe_repath():
     _paste_and_maybe_repath()
 
 
+def paste_plain():
+    """Plain Ctrl+V -- Nuke's own paste, no repath check. See repath.py
+    for why this exists as its own command instead of Ctrl+V just
+    falling back to Nuke's native behaviour on its own (it doesn't)."""
+    from .repath import paste_plain as _paste_plain
+    _paste_plain()
+
+
 def register_menu():
     """Idempotent -- safe to call repeatedly without piling up duplicate
     menu entries (removes each old item first, if present)."""
@@ -119,6 +136,20 @@ def register_menu():
         "import little_helpers; little_helpers.reload_all(); "
         "little_helpers.paste_and_maybe_repath()",
         "Alt+V",
+    )
+
+    # Plain Ctrl+V -- restores Nuke's own paste (no repath check), lost
+    # when the block above claims Edit/Paste for Alt+V: removeItem there
+    # drops the native Ctrl+V binding for good, confirmed live 2026-09-12
+    # (Ctrl+V did nothing at all until this was added). Own menu path,
+    # not Edit/Paste -- a single menu command only carries one hotkey.
+    if nuke_menu.findItem(PASTE_PLAIN_MENU_PATH):
+        nuke_menu.removeItem(PASTE_PLAIN_MENU_PATH)
+    nuke_menu.addCommand(
+        PASTE_PLAIN_MENU_PATH,
+        "import little_helpers; little_helpers.reload_all(); "
+        "little_helpers.paste_plain()",
+        "Ctrl+V",
     )
 
 

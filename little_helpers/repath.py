@@ -71,6 +71,22 @@ def paste_and_maybe_repath():
     maybe_offer_repath(nuke.selectedNodes())
 
 
+def paste_plain():
+    """Bound to plain Ctrl+V (see __init__.py's register_menu) -- restores
+    Nuke's own paste behaviour with no repath check, lost when the Alt+V
+    rebind (2026-09-12) took over the Edit/Paste menu path outright:
+    removeItem there drops the native Ctrl+V binding for good, Nuke does
+    not fall back to it on its own (confirmed live -- Ctrl+V did nothing
+    after the rebind until this was added). Registered as its own
+    separate menu command/hotkey, not folded into paste_and_maybe_repath,
+    so a plain paste never runs the cross-shot check at all -- matches
+    Nuke's stock Edit/@;Paste2 (Ctrl+Shift+V) sitting alongside Edit/Paste
+    as its own untouched command."""
+    import nukescripts
+    with nuke.lastHitGroup():
+        nuke.nodePaste(nukescripts.cut_paste_file())
+
+
 def maybe_offer_repath(pasted_nodes):
     """Given the just-pasted node selection, look for two things and, if
     either is found, put up one dialog (repath_ui.ask_repath -- a custom
