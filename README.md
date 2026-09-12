@@ -42,8 +42,10 @@ the checkout folder's name doesn't matter, only its contents do:
    e.g. `~/.nuke/little_helpers-repo/` -- Nuke finds `menu.py` and the
    `little_helpers` package inside it regardless of what the checkout itself
    is called).
-2. Restart Nuke. The three tools appear under the `Little Helpers` menu in
-   the Node Graph, with the hotkeys above.
+2. Restart Nuke. The first three tools appear under the `Little Helpers`
+   menu in the Node Graph; the two Paste entries sit under `Edit` instead
+   (they override/restore the built-in Paste command). All five work via
+   the hotkeys above either way.
 
 That's the entire install. Nothing else needs to run, nothing else needs
 to be configured, and nothing in this package binds a port or reaches
