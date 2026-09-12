@@ -8,9 +8,10 @@
 
 ## Що саме інтегруємо
 
-`little_helpers/` — самодостатній Python-пакет для Nuke: три тулзи для
+`little_helpers/` — самодостатній Python-пакет для Nuke: чотири тулзи для
 художників (ініціалізація layer-branch, степінг версій шарів, спліт компа
-по lightgroup). **Жодної залежності від MCP-обв'язки цього репо** — пакет
+по lightgroup, repath нод при вставці з іншого шоту). **Жодної залежності
+від MCP-обв'язки цього репо** — пакет
 ніколи не імпортує `nuke_mcp_plugin`, не відкриває сокет, не звертається
 нікуди за межі Nuke-сесії, в якій працює. Кожен імпорт всередині
 `little_helpers/` — це stdlib, `nuke`, `PySide6`/`PySide2` (Qt, з фолбеком
@@ -46,6 +47,8 @@
     ├── hud.py
     ├── layer_branch.py
     ├── layer_picker_ui.py
+    ├── repath.py             (Repath on Paste, Alt+V)
+    ├── repath_ui.py           (repath-діалог, окремий модуль)
     ├── veriter/             (Change Layer Version, Shift+E)
     │   ├── __init__.py
     │   ├── versions.py
@@ -103,25 +106,37 @@ menu.py без конфліктів, незалежно від того, що т
 
 | Тулза | Хоткей | Шлях у меню |
 | --- | --- | --- |
-| Create Layer Branch | `Shift+A` | `Little Helpers/Create Layer Branch` |
-| Change Layer Version | `Shift+E` | `Little Helpers/Change Layer Version` |
-| Split Layers | `F10` | `Little Helpers/Split Layers` |
+| Create Layer Branch | `Shift+A` | `Little Helpers/Create Layer Branch` (меню `Nodes`) |
+| Change Layer Version | `Shift+E` | `Little Helpers/Change Layer Version` (меню `Nodes`) |
+| Split Layers | `F10` | `Little Helpers/Split Layers` (меню `Nodes`) |
+| Repath on Paste | `Alt+V` | `Edit/Paste` (меню `Nuke`, **перевизначає рідний Paste на цьому ж шляху** — не окремий пункт під `Little Helpers/...`, а заміна вбудованої команди) |
 
-Ці три підбирались емпірично на чистому Nuke 16 — під час розробки
+Перші три підбирались емпірично на чистому Nuke 16 — під час розробки
 зловили один реальний конфлікт (`Shift+D`, з часом прибраний; його мовчки
 перебивав вбудований байнд Nuke у меню `Viewer` на "go to next keyframe" —
 інше топ-левел меню, ніж `Nodes`, тому такий конфлікт легко проґавити при
-скані). Перед студійним роллаутом перевірте `Shift+A`, `Shift+E` і `F10`
-проти всього, що ваш pipeline вже байндить (і в меню `Nodes`, і в будь-якому
-іншому топ-левел меню Nuke — `Viewer`, `Edit` тощо). Якщо щось конфліктує —
-перепризначте в `little_helpers/__init__.py`, у функції `register_menu()`:
-це єдине місце, де живуть усі три рядки з хоткеями.
+скані). `Alt+V` обрано 2026-09-12 (раніше цей же override сидів на
+`Ctrl+V`; перепризначили, щоб лишити голий `Ctrl+V` вільним — але чи
+`Ctrl+V` після цього повертається до рідного paste, чи лишається зовсім
+без байнду на цьому пункті меню, живим тестом на пайплайн-машині ще не
+підтверджено, лише на dev-машині розробника). Перед студійним роллаутом
+перевірте `Shift+A`, `Shift+E`, `F10` і `Alt+V` проти всього, що ваш
+pipeline вже байндить (і в меню `Nodes`, і в будь-якому іншому топ-левел
+меню Nuke — `Viewer`, `Edit` тощо, особливо для `Alt+V`, бо він єдиний не
+під `Nodes`). Якщо щось конфліктує — перші три перепризначаються в
+`little_helpers/__init__.py`, у функції `register_menu()` (це єдине
+місце, де живуть їхні хоткеї); `Alt+V` — там само, у `paste_and_maybe_repath`-
+реєстрації нижче в тому ж файлі (`PASTE_OVERRIDE_MENU_PATH`).
 
 ## 4. Реальні залежності під час роботи
 
-- **Nuke 15+ з PySide2, або Nuke 16+ з PySide6.** Стосується `veriter/` і
-  `layer_picker_ui.py` — кожен їхній імпорт Qt спершу пробує PySide6, з
-  фолбеком на PySide2.
+- **Nuke 15+ з PySide2, або Nuke 16+ з PySide6.** Стосується `veriter/`,
+  `layer_picker_ui.py` і `repath_ui.py` — кожен їхній імпорт Qt спершу
+  пробує PySide6, з фолбеком на PySide2. `repath_ui.py` — перший
+  по-справжньому модальний `QDialog` у пакеті (решта — фреймлес `Qt.Tool`
+  попапи, що закриваються по кліку повз них); варто перевірити його
+  живцем на вашій версії Nuke/PySide перед роллаутом, а не лише покластись
+  на те, що решта Qt-коду вже працювала.
 - **`split_layers/split_layers.py` імпортує pipeline-овий `pl_scripts.split_layers`
   напряму** (`from pl_scripts import split_layers`, той самий підпакет, чий
   `pl_scripts.split_layers.main` вже висить на меню `Plarium > Split Layers`
@@ -170,6 +185,11 @@ menu.py без конфліктів, незалежно від того, що т
 - **Split Layers (`F10`)** взагалі не залежить від layer-branch конвенції —
   працює з тим, що виділено, і його вхідними каналами, незалежно від того,
   як цю ноду будували.
+- **Repath on Paste (`Alt+V`)** прив'язана до тієї ж конвенції шляхів, що
+  й Change Layer Version — той самий `<layer>/vXXX/<pass>_product.<frame>.<ext>`
+  парсинг, і так само читає `$FTRACK_RENDER_PATH` (як Create Layer Branch)
+  як точку відліку "поточного шоту". Read, чий шлях не збігається з цим
+  форматом, попап взагалі ігнорує — на звичайний paste не спрацьовує.
 
 Якщо конвенція компа у вашій студії відрізняється від тієї, що в
 `docs/NUKE_COMP_LAYER_ASSEMBLY.md`, Function 1 доведеться адаптувати (це
