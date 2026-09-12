@@ -12,16 +12,18 @@ Function 1 (layer_branch.build_layer_branch) and Function 2
 (veriter.versions) already use. This module is glue over that code, not a
 new engine.
 
-Hooked into Alt+V itself (rebound from the original Ctrl+V 2026-09-11, per
-Sashok's ask -- see __init__.py's register_menu, which overrides Nuke's
-built-in Nuke/Edit/Paste command -- confirmed live via a recursive
-nuke.menu() scan that Paste lives there, not under a plain top-level
-"Edit" menu, same class of hidden-menu gotcha as the Shift+D collision
-documented elsewhere in this project) rather than nuke.addOnUserCreate: a
-multi-node paste fires addOnUserCreate once per node, but this hotkey
-fires once, and Nuke has already selected exactly the pasted nodes by the
-time our wrapper regains control -- so the whole pasted batch is
-inspected as one group, with one popup, not N.
+Hooked into Alt+V, a standalone new menu command (Nuke/Edit/Repath Paste
+-- see __init__.py's register_menu; same top-level nuke.menu("Nuke"),
+not nuke.menu("Nodes"), as Nuke's own Edit/Paste, confirmed live via a
+recursive nuke.menu() scan that Paste lives there, not under a plain
+top-level "Edit" menu, same class of hidden-menu gotcha as the Shift+D
+collision documented elsewhere in this project -- but never overrides
+Edit/Paste itself, so plain Ctrl+V stays Nuke's own untouched paste,
+always) rather than nuke.addOnUserCreate: a multi-node paste fires
+addOnUserCreate once per node, but this hotkey fires once, and Nuke has
+already selected exactly the pasted nodes by the time our wrapper
+regains control -- so the whole pasted batch is inspected as one group,
+with one popup, not N.
 """
 
 import os
@@ -62,29 +64,14 @@ def _rename_layer_in_text(text, old_layer_name, new_layer_name):
 
 
 def paste_and_maybe_repath():
-    """Bound to Alt+V (see __init__.py's register_menu), replacing Nuke's
-    built-in Ctrl+V paste at the Edit/Paste menu path. Pastes exactly as
-    Nuke's own Edit/Paste does, then inspects the resulting selection."""
+    """Bound to Alt+V (see __init__.py's register_menu) -- a standalone
+    command, not an override of Nuke's own Ctrl+V/Edit/Paste. Pastes the
+    same way Nuke's own Edit/Paste does, then inspects the resulting
+    selection."""
     import nukescripts
     with nuke.lastHitGroup():
         nuke.nodePaste(nukescripts.cut_paste_file())
     maybe_offer_repath(nuke.selectedNodes())
-
-
-def paste_plain():
-    """Bound to plain Ctrl+V (see __init__.py's register_menu) -- restores
-    Nuke's own paste behaviour with no repath check, lost when the Alt+V
-    rebind (2026-09-12) took over the Edit/Paste menu path outright:
-    removeItem there drops the native Ctrl+V binding for good, Nuke does
-    not fall back to it on its own (confirmed live -- Ctrl+V did nothing
-    after the rebind until this was added). Registered as its own
-    separate menu command/hotkey, not folded into paste_and_maybe_repath,
-    so a plain paste never runs the cross-shot check at all -- matches
-    Nuke's stock Edit/@;Paste2 (Ctrl+Shift+V) sitting alongside Edit/Paste
-    as its own untouched command."""
-    import nukescripts
-    with nuke.lastHitGroup():
-        nuke.nodePaste(nukescripts.cut_paste_file())
 
 
 def maybe_offer_repath(pasted_nodes):

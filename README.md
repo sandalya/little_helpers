@@ -24,8 +24,7 @@ layer-branch comp convention.
 | Create Layer Branch | `Shift+A` | Lists layer-branch folders under `$FTRACK_RENDER_PATH`, freshest first. Pick one to build the 4-Read (lights/beauty/tech/crypto) assembly chain for it. |
 | Change Layer Version | `Shift+E` | Jump to latest / step version up / step version down on the selected Read node(s) (or, if nothing's selected, whatever Reads are visible in the Node Graph). Optional "History" checkbox keeps a row of old-version reference Reads in sync next to the live one. |
 | Split Layers | `F10` | Sashok's per-lightgroup comp splitter, standalone. Also reachable as a checkbox inside the Create Layer Branch panel, which runs it on the branch it just built. |
-| Repath on Paste | `Alt+V` | Overrides `Edit/Paste`. Pastes normally, then checks the pasted selection for Read nodes from another shot's render root and offers to repoint them at this shot's own renders (a dialog with one dropdown per ambiguous/unmatched layer), deletes any disconnected history Reads that came along, and relabels branch StickyNotes to match. |
-| Paste (Plain) | `Ctrl+V` | Nuke's own paste, unmodified, no repath check -- exists because claiming `Edit/Paste` for the row above takes plain `Ctrl+V` with it (Nuke doesn't fall back to its native paste on its own). |
+| Repath on Paste | `Alt+V` | A standalone command (`Edit/Repath Paste` -- does **not** touch or override the built-in `Edit/Paste`, so plain `Ctrl+V` always stays Nuke's own untouched paste). Pastes, then checks the pasted selection for Read nodes from another shot's render root and offers to repoint them at this shot's own renders (a dialog with one dropdown per ambiguous/unmatched layer), deletes any disconnected history Reads that came along, and relabels branch StickyNotes to match. |
 
 ## Install
 
@@ -43,9 +42,9 @@ the checkout folder's name doesn't matter, only its contents do:
    `little_helpers` package inside it regardless of what the checkout itself
    is called).
 2. Restart Nuke. The first three tools appear under the `Little Helpers`
-   menu in the Node Graph; the two Paste entries sit under `Edit` instead
-   (they override/restore the built-in Paste command). All five work via
-   the hotkeys above either way.
+   menu in the Node Graph; Repath on Paste sits under `Edit` instead (its
+   own new entry, `Edit/Repath Paste` -- it doesn't touch the built-in
+   `Edit/Paste`). All four work via the hotkeys above either way.
 
 That's the entire install. Nothing else needs to run, nothing else needs
 to be configured, and nothing in this package binds a port or reaches

@@ -20,25 +20,20 @@ LAYER_PICKER_MENU_PATH = "Little Helpers/Create Layer Branch"
 VERSION_HUD_MENU_PATH = "Little Helpers/Change Layer Version"
 SPLIT_LAYERS_MENU_PATH = "Little Helpers/Split Layers"
 
-# Overrides Nuke's own built-in Paste command in place (nuke.menu("Nuke"),
-# not nuke.menu("Nodes") like the three paths above -- confirmed live via
-# a recursive nuke.menu() scan, same "wrong top-level menu" gotcha as the
-# Shift+D collision elsewhere in this project's history) so Alt+V triggers
-# the repath-on-paste check -- Sashok's ask (2026-09-11), rebound from the
-# original Ctrl+V. NOT yet confirmed live whether plain Ctrl+V still does
-# anything at this menu path afterward (the native Edit/Paste item this
-# replaces is gone via removeItem, same as before the rebind) -- verify on
-# pc137 rather than assuming either way. See repath.py.
-PASTE_OVERRIDE_MENU_PATH = "Edit/Paste"
-
-# Own menu entry for the plain-paste fallback above -- deliberately not
-# "Edit/Paste" (already claimed, one hotkey per command) and not visible
-# under "Little Helpers/..." (this isn't an artist-facing tool, it's a
-# restored default). Nuke's own paste-adjacent commands use an "@;" name
-# prefix (Edit/@;Paste2) that looks like it might mean "hidden from the
-# menu" -- NOT confirmed what it actually does, so not gambled on here;
-# a plain readable label is guaranteed to just work.
-PASTE_PLAIN_MENU_PATH = "Edit/Paste (Plain)"
+# A brand new menu entry, NOT an override of Nuke's own built-in
+# Edit/Paste (nuke.menu("Nuke"), not nuke.menu("Nodes") like the three
+# paths above -- same "wrong top-level menu" gotcha as the Shift+D
+# collision elsewhere in this project's history, so this still isn't
+# filed under "Little Helpers/..."). First version of this (2026-09-11)
+# did override Edit/Paste itself and rebind it to Alt+V, which meant
+# plain Ctrl+V lost Nuke's native paste and needed its own restore
+# command -- unnecessary complexity Sashok caught 2026-09-12: nothing
+# about Alt+V required touching Edit/Paste at all, since Alt+V was never
+# claimed by Nuke natively. This way Edit/Paste (Ctrl+V) is never
+# touched, ever -- no override, no restore, no risk of the two drifting
+# out of sync with whatever Nuke's own native paste does in a future
+# version. See repath.py.
+REPATH_PASTE_MENU_PATH = "Edit/Repath Paste"
 
 
 # ---- Version manager hookup (Function 2, Shift+E) ------------------------
@@ -77,23 +72,15 @@ def show_split_layers():
     split_layers.main()
 
 
-# ---- Repath-on-paste hookup (Alt+V override) ------------------------------
+# ---- Repath-on-paste hookup (Alt+V, standalone command) -------------------
 # See repath.py for the actual detection/repath logic. This stays thin glue
 # only, same lazy-import pattern as show_version_hud/show_split_layers above.
 
 def paste_and_maybe_repath():
-    """Alt+V override -- pastes normally, then checks the pasted selection
-    for cross-shot Reads / stray history Reads. See repath.py."""
+    """Alt+V -- pastes normally, then checks the pasted selection for
+    cross-shot Reads / stray history Reads. See repath.py."""
     from .repath import paste_and_maybe_repath as _paste_and_maybe_repath
     _paste_and_maybe_repath()
-
-
-def paste_plain():
-    """Plain Ctrl+V -- Nuke's own paste, no repath check. See repath.py
-    for why this exists as its own command instead of Ctrl+V just
-    falling back to Nuke's native behaviour on its own (it doesn't)."""
-    from .repath import paste_plain as _paste_plain
-    _paste_plain()
 
 
 def register_menu():
@@ -128,28 +115,16 @@ def register_menu():
         "F10",
     )
 
+    # Own new command, Edit/Repath Paste -- Edit/Paste (Ctrl+V) itself is
+    # never touched, see REPATH_PASTE_MENU_PATH's comment above.
     nuke_menu = nuke.menu("Nuke")
-    if nuke_menu.findItem(PASTE_OVERRIDE_MENU_PATH):
-        nuke_menu.removeItem(PASTE_OVERRIDE_MENU_PATH)
+    if nuke_menu.findItem(REPATH_PASTE_MENU_PATH):
+        nuke_menu.removeItem(REPATH_PASTE_MENU_PATH)
     nuke_menu.addCommand(
-        PASTE_OVERRIDE_MENU_PATH,
+        REPATH_PASTE_MENU_PATH,
         "import little_helpers; little_helpers.reload_all(); "
         "little_helpers.paste_and_maybe_repath()",
         "Alt+V",
-    )
-
-    # Plain Ctrl+V -- restores Nuke's own paste (no repath check), lost
-    # when the block above claims Edit/Paste for Alt+V: removeItem there
-    # drops the native Ctrl+V binding for good, confirmed live 2026-09-12
-    # (Ctrl+V did nothing at all until this was added). Own menu path,
-    # not Edit/Paste -- a single menu command only carries one hotkey.
-    if nuke_menu.findItem(PASTE_PLAIN_MENU_PATH):
-        nuke_menu.removeItem(PASTE_PLAIN_MENU_PATH)
-    nuke_menu.addCommand(
-        PASTE_PLAIN_MENU_PATH,
-        "import little_helpers; little_helpers.reload_all(); "
-        "little_helpers.paste_plain()",
-        "Ctrl+V",
     )
 
 
