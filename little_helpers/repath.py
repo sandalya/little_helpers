@@ -12,18 +12,14 @@ Function 1 (layer_branch.build_layer_branch) and Function 2
 (veriter.versions) already use. This module is glue over that code, not a
 new engine.
 
-Hooked into Alt+V, a standalone new menu command (Nuke/Edit/Repath Paste
--- see __init__.py's register_menu; same top-level nuke.menu("Nuke"),
-not nuke.menu("Nodes"), as Nuke's own Edit/Paste, confirmed live via a
-recursive nuke.menu() scan that Paste lives there, not under a plain
-top-level "Edit" menu, same class of hidden-menu gotcha as the Shift+D
-collision documented elsewhere in this project -- but never overrides
-Edit/Paste itself, so plain Ctrl+V stays Nuke's own untouched paste,
-always) rather than nuke.addOnUserCreate: a multi-node paste fires
-addOnUserCreate once per node, but this hotkey fires once, and Nuke has
-already selected exactly the pasted nodes by the time our wrapper
-regains control -- so the whole pasted batch is inspected as one group,
-with one popup, not N.
+Hooked into Alt+V, a standalone new menu command (Little Helpers/Repath
+Paste, under nuke.menu("Nodes") alongside the other three tools -- see
+__init__.py's register_menu; never overrides Nuke's own Edit/Paste, so
+plain Ctrl+V always stays Nuke's own untouched native paste) rather than
+nuke.addOnUserCreate: a multi-node paste fires addOnUserCreate once per
+node, but this hotkey fires once, and Nuke has already selected exactly
+the pasted nodes by the time our wrapper regains control -- so the whole
+pasted batch is inspected as one group, with one popup, not N.
 """
 
 import os

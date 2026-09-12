@@ -21,19 +21,20 @@ VERSION_HUD_MENU_PATH = "Little Helpers/Change Layer Version"
 SPLIT_LAYERS_MENU_PATH = "Little Helpers/Split Layers"
 
 # A brand new menu entry, NOT an override of Nuke's own built-in
-# Edit/Paste (nuke.menu("Nuke"), not nuke.menu("Nodes") like the three
-# paths above -- same "wrong top-level menu" gotcha as the Shift+D
-# collision elsewhere in this project's history, so this still isn't
-# filed under "Little Helpers/..."). First version of this (2026-09-11)
-# did override Edit/Paste itself and rebind it to Alt+V, which meant
-# plain Ctrl+V lost Nuke's native paste and needed its own restore
-# command -- unnecessary complexity Sashok caught 2026-09-12: nothing
-# about Alt+V required touching Edit/Paste at all, since Alt+V was never
-# claimed by Nuke natively. This way Edit/Paste (Ctrl+V) is never
-# touched, ever -- no override, no restore, no risk of the two drifting
-# out of sync with whatever Nuke's own native paste does in a future
-# version. See repath.py.
-REPATH_PASTE_MENU_PATH = "Edit/Repath Paste"
+# Edit/Paste. First version of this (2026-09-11) *did* override
+# Edit/Paste itself (a different top-level menu, nuke.menu("Nuke") not
+# nuke.menu("Nodes") -- same "wrong top-level menu" gotcha as the
+# Shift+D collision elsewhere in this project's history) and rebind it
+# to Alt+V, which meant plain Ctrl+V lost Nuke's native paste and needed
+# its own restore command -- unnecessary complexity Sashok caught
+# 2026-09-12: nothing about Alt+V required touching Edit/Paste at all,
+# since Alt+V was never claimed by Nuke natively. Redesigned same day to
+# a standalone command instead (Edit/Paste is never touched, ever); then
+# moved here, under Little Helpers/... alongside the other three tools,
+# 2026-09-12 once "why is this one still under Edit" stopped having an
+# answer -- nothing about it needs nuke.menu("Nuke") specifically, that
+# was only ever a leftover from the Edit/Paste-override era. See repath.py.
+REPATH_PASTE_MENU_PATH = "Little Helpers/Repath Paste"
 
 
 # ---- Version manager hookup (Function 2, Shift+E) ------------------------
@@ -115,12 +116,9 @@ def register_menu():
         "F10",
     )
 
-    # Own new command, Edit/Repath Paste -- Edit/Paste (Ctrl+V) itself is
-    # never touched, see REPATH_PASTE_MENU_PATH's comment above.
-    nuke_menu = nuke.menu("Nuke")
-    if nuke_menu.findItem(REPATH_PASTE_MENU_PATH):
-        nuke_menu.removeItem(REPATH_PASTE_MENU_PATH)
-    nuke_menu.addCommand(
+    if menu.findItem(REPATH_PASTE_MENU_PATH):
+        menu.removeItem(REPATH_PASTE_MENU_PATH)
+    menu.addCommand(
         REPATH_PASTE_MENU_PATH,
         "import little_helpers; little_helpers.reload_all(); "
         "little_helpers.paste_and_maybe_repath()",
