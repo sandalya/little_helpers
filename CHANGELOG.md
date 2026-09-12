@@ -4,6 +4,17 @@ All notable changes to this project are documented here. Format loosely
 follows [Keep a Changelog](https://keepachangelog.com/); versions are
 git tags (`vMAJOR.MINOR.PATCH`), newest first.
 
+## [1.3.0] - 2026-09-12
+
+### Added
+
+- Flip Viewers (`F2`): toggles a horizontal mirror on every open Viewer
+  at once. Goes through each Viewer's built-in input-process slot (a
+  shared `Mirror2` node, `flop` knob) rather than a node spliced into
+  the graph, so it never touches a render and can't leak into a saved
+  script. A new Viewer created while the flip is on joins it
+  immediately.
+
 ## [1.2.0] - 2026-09-12
 
 ### Changed
@@ -50,5 +61,6 @@ git tags (`vMAJOR.MINOR.PATCH`), newest first.
   dev-session edit to that file could be silently ignored until Nuke
   restarted.
 
+[1.3.0]: https://github.com/sandalya/little_helpers/releases/tag/v1.3.0
 [1.2.0]: https://github.com/sandalya/little_helpers/releases/tag/v1.2.0
 [1.1.1]: https://github.com/sandalya/little_helpers/releases/tag/v1.1.1

@@ -14,7 +14,7 @@ Installing this yourself on your own machine? Keep reading below.
 Rolling it out pipeline-wide for other compositors? See
 `docs/NUKE_PIPELINE_TD_INTEGRATION.md` in this repo instead --
 it covers shared-`NUKE_PATH` placement, `menu.py` wiring, hotkey
-collision checks, and which of the four tools are coupled to the
+collision checks, and which of the five tools are coupled to the
 layer-branch comp convention.
 
 ## What's here
@@ -25,6 +25,7 @@ layer-branch comp convention.
 | Change Render Version | `Shift+E` | Jump to latest / step version up / step version down on the selected Read node(s) (or, if nothing's selected, whatever Reads are visible in the Node Graph). Optional "History" checkbox keeps a row of old-version reference Reads in sync next to the live one. |
 | Split Layers | `F10` | Sashok's per-lightgroup comp splitter, standalone. Also reachable as a checkbox inside the Create Render Branch panel, which runs it on the branch it just built. |
 | Repath on Paste | `Alt+V` | Pastes, then checks the pasted selection for Read nodes from another shot's render root and offers to repoint them at this shot's own renders (a dialog with one dropdown per ambiguous/unmatched layer), deletes any disconnected history Reads that came along, and relabels branch StickyNotes to match. A standalone command -- doesn't touch or override the built-in `Edit/Paste`, so plain `Ctrl+V` always stays Nuke's own untouched paste. |
+| Flip Viewers | `F2` | Toggles a horizontal mirror on every open Viewer at once, via each Viewer's built-in input-process slot -- never touches the node graph, never affects a render. Press again to clear it. Not tied to the layer-branch comp convention at all. |
 
 ## Install
 
@@ -41,7 +42,7 @@ the checkout folder's name doesn't matter, only its contents do:
    e.g. `~/.nuke/little_helpers-repo/` -- Nuke finds `menu.py` and the
    `little_helpers` package inside it regardless of what the checkout itself
    is called).
-2. Restart Nuke. All four tools appear under the `Little Helpers` menu in
+2. Restart Nuke. All five tools appear under the `Little Helpers` menu in
    the Node Graph, with the hotkeys above.
 
 That's the entire install. Nothing else needs to run, nothing else needs
