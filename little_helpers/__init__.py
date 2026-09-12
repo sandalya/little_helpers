@@ -2,9 +2,10 @@
 little_helpers
 
 Self-contained Nuke artist tools: Create Render Branch (Shift+A), Change
-Render Version (Shift+E), Split Layers (F10), Repath Paste (Alt+V). No
-MCP, no network, no server -- copy this folder into ~/.nuke/ and call
-register_menu() from menu.py. See README.md for the two-line install.
+Render Version (Shift+E), Split Layers (F10), Repath Paste (Alt+V), Flip
+Viewers (F2). No MCP, no network, no server -- copy this folder into
+~/.nuke/ and call register_menu() from menu.py. See README.md for the
+two-line install.
 
 Invariant: this package imports nothing outside itself. Anything that
 wants to use it imports it -- never the other way around.
@@ -43,6 +44,8 @@ _MENU_ICON_PATH = os.path.join(os.path.dirname(__file__), "icons", "little_helpe
 # answer -- nothing about it needs nuke.menu("Nuke") specifically, that
 # was only ever a leftover from the Edit/Paste-override era. See repath.py.
 REPATH_PASTE_MENU_PATH = "Little Helpers/Repath Paste"
+
+VIEWER_FLIP_MENU_PATH = "Little Helpers/Flip Viewers (F2)"
 
 
 # ---- Version manager hookup (Function 2, Shift+E) ------------------------
@@ -92,6 +95,15 @@ def paste_and_maybe_repath():
     _paste_and_maybe_repath()
 
 
+# ---- Viewer flip hookup (F2, standalone toggle) ---------------------------
+# See viewer_flip.py -- input-process based, never touches the node graph.
+
+def toggle_viewer_flip():
+    """F2 -- mirrors every Viewer horizontally, or clears it back off."""
+    from .viewer_flip import toggle_viewer_flip as _toggle_viewer_flip
+    _toggle_viewer_flip()
+
+
 def register_menu():
     """Idempotent -- safe to call repeatedly without piling up duplicate
     menu entries (removes each old item first, if present)."""
@@ -138,6 +150,21 @@ def register_menu():
         "Alt+V",
     )
 
+    # Not yet collision-checked against every top-level Nuke menu (same
+    # caveat as lh_router's F12/Shift+F12) -- verify live on pc137 before
+    # relying on it.
+    if menu.findItem(VIEWER_FLIP_MENU_PATH):
+        menu.removeItem(VIEWER_FLIP_MENU_PATH)
+    menu.addCommand(
+        VIEWER_FLIP_MENU_PATH,
+        "import little_helpers; little_helpers.reload_all(); "
+        "little_helpers.toggle_viewer_flip()",
+        "F2",
+    )
+
+    from . import viewer_flip
+    viewer_flip.register()
+
 
 _RELOAD_ORDER = (
     "nuke_utils", "hud", "layer_branch",
@@ -145,6 +172,7 @@ _RELOAD_ORDER = (
     "layer_picker_ui",
     "split_layers.nuke_actions", "split_layers.split_layers",
     "repath_ui", "repath",
+    "viewer_flip",
 )
 
 
