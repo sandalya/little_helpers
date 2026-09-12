@@ -1,14 +1,16 @@
 """
 little_helpers
 
-Self-contained Nuke artist tools: Create Layer Branch (Shift+A), Change
-Layer Version (Shift+E), Split Layers (F10). No MCP, no network, no
-server -- copy this folder into ~/.nuke/ and call register_menu() from
-menu.py. See README.md for the two-line install.
+Self-contained Nuke artist tools: Create Render Branch (Shift+A), Change
+Render Version (Shift+E), Split Layers (F10), Repath Paste (Alt+V). No
+MCP, no network, no server -- copy this folder into ~/.nuke/ and call
+register_menu() from menu.py. See README.md for the two-line install.
 
 Invariant: this package imports nothing outside itself. Anything that
 wants to use it imports it -- never the other way around.
 """
+
+import os
 
 import nuke
 
@@ -16,9 +18,15 @@ from .layer_picker_ui import show_layer_picker
 
 __version__ = "1.1.1"
 
-LAYER_PICKER_MENU_PATH = "Little Helpers/Create Layer Branch"
-VERSION_HUD_MENU_PATH = "Little Helpers/Change Layer Version"
+LAYER_PICKER_MENU_PATH = "Little Helpers/Create Render Branch"
+VERSION_HUD_MENU_PATH = "Little Helpers/Change Render Version"
 SPLIT_LAYERS_MENU_PATH = "Little Helpers/Split Layers"
+
+# Icon for the "Little Helpers" submenu itself (Sashok's pick, 2026-09-12
+# -- not a placeholder, deliberately whatever this points at). Path is
+# relative to this file so it resolves regardless of where this repo is
+# checked out on NUKE_PATH.
+_MENU_ICON_PATH = os.path.join(os.path.dirname(__file__), "icons", "little_helpers_menu.png")
 
 # A brand new menu entry, NOT an override of Nuke's own built-in
 # Edit/Paste. First version of this (2026-09-11) *did* override
@@ -88,6 +96,11 @@ def register_menu():
     """Idempotent -- safe to call repeatedly without piling up duplicate
     menu entries (removes each old item first, if present)."""
     menu = nuke.menu("Nodes")
+
+    # Icon on the "Little Helpers" submenu itself -- addMenu is idempotent
+    # (returns the existing submenu if already there), doesn't disturb the
+    # addCommand entries inside it below.
+    menu.addMenu("Little Helpers", icon=_MENU_ICON_PATH)
 
     if menu.findItem(LAYER_PICKER_MENU_PATH):
         menu.removeItem(LAYER_PICKER_MENU_PATH)

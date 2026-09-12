@@ -49,7 +49,7 @@
     ├── layer_picker_ui.py
     ├── repath.py             (Repath on Paste, Alt+V)
     ├── repath_ui.py          (repath-діалог, окремий модуль)
-    ├── veriter/             (Change Layer Version, Shift+E)
+    ├── veriter/             (Change Render Version, Shift+E)
     │   ├── __init__.py
     │   ├── versions.py
     │   └── version_ui.py
@@ -64,7 +64,7 @@
 `little_helpers/` (підпапка-пакет) влаштований як набір тулз: спільна
 інфраструктура (`hud.py`, `nuke_utils.py`, `layer_branch.py`) лежить прямо
 в корені пакета, а кожна самодостатня тулза — у своїй підпапці (`veriter/`
-для Change Layer Version, `split_layers/` для Split Layers). Наступні нові
+для Change Render Version, `split_layers/` для Split Layers). Наступні нові
 тулзи очікувано підуть за тим самим патерном — ще одна підпапка поруч.
 
 Найпростіший варіант — клонувати весь цей репо кудись, що вже є на
@@ -106,8 +106,8 @@ menu.py без конфліктів, незалежно від того, що т
 
 | Тулза | Хоткей | Шлях у меню |
 | --- | --- | --- |
-| Create Layer Branch | `Shift+A` | `Little Helpers/Create Layer Branch` (меню `Nodes`) |
-| Change Layer Version | `Shift+E` | `Little Helpers/Change Layer Version` (меню `Nodes`) |
+| Create Render Branch | `Shift+A` | `Little Helpers/Create Render Branch` (меню `Nodes`) |
+| Change Render Version | `Shift+E` | `Little Helpers/Change Render Version` (меню `Nodes`) |
 | Split Layers | `F10` | `Little Helpers/Split Layers` (меню `Nodes`) |
 | Repath on Paste | `Alt+V` | `Little Helpers/Repath Paste` (меню `Nodes`) — `Edit/Paste`/`Ctrl+V` не чіпається, ніколи |
 
@@ -158,7 +158,7 @@ menu.py без конфліктів, незалежно від того, що т
   "Repath on Paste" (`Alt+V`, використовує його як точку відліку
   "поточного шоту", див. §5). Якщо ваш ftrack-лончер уже виставляє цю
   змінну кожному артисту (як на машинах, де це розроблялось), додаткової
-  роботи з боку pipeline не треба. "Change Layer Version" цю змінну
+  роботи з боку pipeline не треба. "Change Render Version" цю змінну
   взагалі не чіпає — працює з тим, що вже є в скрипті (Read-ноди/виділення).
 - **Жодної мережі, зовнішніх сервісів чи інших файлів репо** поза
   pipeline-овим `split_layers`, описаним вище.
@@ -168,7 +168,7 @@ menu.py без конфліктів, незалежно від того, що т
 Це важливо для розуміння, чи достатньо просто "встановити", чи це дасть
 ефект лише художникам, які будують комп певним конкретним способом:
 
-- **Create Layer Branch (`Shift+A`)** прив'язана до однієї конкретної
+- **Create Render Branch (`Shift+A`)** прив'язана до однієї конкретної
   схеми компа — повний рецепт у `docs/NUKE_COMP_LAYER_ASSEMBLY.md`.
   Коротко: очікує рендер-структуру вигляду
   `.../render/<layer>/v0XX/<pass>_product.<frame>.<ext>` з рівно чотирма
@@ -177,7 +177,7 @@ menu.py без конфліктів, незалежно від того, що т
   Якщо структура рендеру чи стиль компа в конкретного художника відрізняється
   від цієї конвенції — ця кнопка збудує йому не те; це не універсальна
   тулза "зібрати будь-які паси".
-- **Change Layer Version (`Shift+E`)** універсальніша: вона реверс-парсить
+- **Change Render Version (`Shift+E`)** універсальніша: вона реверс-парсить
   knob `file` на вже наявній (виділеній або видимій у в'юпорті) Read-ноді
   проти того самого шаблону `<layer>/vXXX/<pass>`, тож працює на будь-якій
   Read, що просто збігається з цим форматом шляху — і на тих, що зібрала
@@ -186,8 +186,8 @@ menu.py без конфліктів, незалежно від того, що т
   працює з тим, що виділено, і його вхідними каналами, незалежно від того,
   як цю ноду будували.
 - **Repath on Paste (`Alt+V`)** прив'язана до тієї ж конвенції шляхів, що
-  й Change Layer Version — той самий `<layer>/vXXX/<pass>_product.<frame>.<ext>`
-  парсинг, і так само читає `$FTRACK_RENDER_PATH` (як Create Layer Branch)
+  й Change Render Version — той самий `<layer>/vXXX/<pass>_product.<frame>.<ext>`
+  парсинг, і так само читає `$FTRACK_RENDER_PATH` (як Create Render Branch)
   як точку відліку "поточного шоту". Read, чий шлях не збігається з цим
   форматом, попап взагалі ігнорує — на звичайний paste не спрацьовує.
 
@@ -216,7 +216,7 @@ edit-reload циклу самого розробника) не шкодить л
 
 Поки що це працювало лише на одній машині, на компах одного шоу. Перед тим
 як вмикати для всіх — обкатайте на парі композерів на реальному шоті,
-зокрема прогнавши "Create Layer Branch" на вашій реальній структурі
+зокрема прогнавши "Create Render Branch" на вашій реальній структурі
 рендер-виводу (§5) і перевіривши хоткеї (§3) проти вже наявних байндів.
 Власник/супроводжуючий цього набору тулз — Sashok; питання й розбіжності в
 конвенції адресувати через нього.
