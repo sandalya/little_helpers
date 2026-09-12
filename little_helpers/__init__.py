@@ -14,7 +14,7 @@ import nuke
 
 from .layer_picker_ui import show_layer_picker
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 
 LAYER_PICKER_MENU_PATH = "Little Helpers/Create Layer Branch"
 VERSION_HUD_MENU_PATH = "Little Helpers/Change Layer Version"
