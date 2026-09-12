@@ -4,6 +4,30 @@ All notable changes to this project are documented here. Format loosely
 follows [Keep a Changelog](https://keepachangelog.com/); versions are
 git tags (`vMAJOR.MINOR.PATCH`), newest first.
 
+## [1.2.0] - 2026-09-12
+
+### Changed
+
+- Alt+V redesigned as a standalone "Repath Paste" command, no longer
+  overriding native Edit/Paste -- plain `Ctrl+V` works normally again.
+- Repath Paste moved into the Little Helpers submenu, alongside the
+  other tools.
+- Renamed "Create/Change Layer Branch/Version" to "Create/Change Render
+  Branch/Version" throughout the menu (identifiers/files unchanged).
+
+### Known issues
+
+- The "Little Helpers" submenu icon (added this release) doesn't show
+  on pc137 -- root cause understood, not fixed: it depends on
+  little_helpers registering its menu before anything else touches the
+  same submenu name. Tracked alongside the studio pipeline update this
+  depends on.
+
+### Fixed
+
+- Stale tool-count/scope claims corrected in README and the TD
+  integration doc.
+
 ## [1.1.1] - 2026-09-12
 
 ### Added
@@ -26,4 +50,5 @@ git tags (`vMAJOR.MINOR.PATCH`), newest first.
   dev-session edit to that file could be silently ignored until Nuke
   restarted.
 
+[1.2.0]: https://github.com/sandalya/little_helpers/releases/tag/v1.2.0
 [1.1.1]: https://github.com/sandalya/little_helpers/releases/tag/v1.1.1
