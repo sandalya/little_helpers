@@ -4,6 +4,10 @@ All notable changes to this project are documented here. Format loosely
 follows [Keep a Changelog](https://keepachangelog.com/); versions are
 git tags (`vMAJOR.MINOR.PATCH`), newest first.
 
+## [2.1.1] - 2026-09-14
+
+Version bump only, no functional changes.
+
 ## [1.3.0] - 2026-09-12
 
 ### Added
@@ -61,6 +65,7 @@ git tags (`vMAJOR.MINOR.PATCH`), newest first.
   dev-session edit to that file could be silently ignored until Nuke
   restarted.
 
+[2.1.1]: https://github.com/sandalya/little_helpers/releases/tag/v2.1.1
 [1.3.0]: https://github.com/sandalya/little_helpers/releases/tag/v1.3.0
 [1.2.0]: https://github.com/sandalya/little_helpers/releases/tag/v1.2.0
 [1.1.1]: https://github.com/sandalya/little_helpers/releases/tag/v1.1.1
